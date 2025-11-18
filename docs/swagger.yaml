@@ -1,0 +1,1525 @@
+basePath: /api/v1
+definitions:
+  entity.AuthResponse:
+    properties:
+      refresh_token:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/entity.UserResponse'
+    type: object
+  entity.Carousel:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      header:
+        type: string
+      id:
+        type: integer
+      image:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  entity.Doctor:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      doctor_photo:
+        type: string
+      fullname:
+        type: string
+      id:
+        type: integer
+      schedule:
+        $ref: '#/definitions/entity.Schedule'
+      schedule_id:
+        type: integer
+      specializations:
+        items:
+          $ref: '#/definitions/entity.Specialization'
+        type: array
+      updated_at:
+        type: string
+    required:
+    - fullname
+    type: object
+  entity.DoctorCreateRequest:
+    properties:
+      description:
+        type: string
+      doctor_photo:
+        type: string
+      fullname:
+        type: string
+      schedule_id:
+        type: integer
+      specialization_ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - fullname
+    type: object
+  entity.DoctorUpdateRequest:
+    properties:
+      description:
+        type: string
+      doctor_photo:
+        type: string
+      fullname:
+        type: string
+      schedule_id:
+        type: integer
+      specialization_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  entity.License:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      photo:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  entity.Schedule:
+    properties:
+      created_at:
+        type: string
+      day:
+        description: 1=Monday, 7=Sunday
+        maximum: 7
+        minimum: 1
+        type: integer
+      id:
+        type: integer
+      time_from:
+        type: string
+      time_to:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - day
+    - time_from
+    - time_to
+    type: object
+  entity.Service:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: integer
+      service_category_id:
+        type: integer
+      specialization_id:
+        type: integer
+      specific_photo:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - name
+    type: object
+  entity.ServiceCategory:
+    properties:
+      category_photo:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      favorite:
+        type: boolean
+      id:
+        type: integer
+      name:
+        type: string
+      specialization_id:
+        type: integer
+      updated_at:
+        type: string
+    required:
+    - name
+    type: object
+  entity.ServiceCreateRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        type: integer
+      service_category_id:
+        type: integer
+      specialization_id:
+        type: integer
+      specific_photo:
+        type: string
+    required:
+    - name
+    type: object
+  entity.Specialization:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - name
+    type: object
+  entity.User:
+    properties:
+      blocked:
+        type: boolean
+      confirmed:
+        type: boolean
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      password:
+        minLength: 6
+        type: string
+      provider:
+        type: string
+      role_id:
+        type: integer
+      role_name:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  entity.UserLoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  entity.UserRegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  entity.UserResponse:
+    properties:
+      blocked:
+        type: boolean
+      confirmed:
+        type: boolean
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      role_name:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@clinic.com
+    name: API Support
+  description: API для управления частной клиникой
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Clinic Backend API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UserLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account
+      parameters:
+      - description: Registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UserRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register new user
+      tags:
+      - auth
+  /carousel:
+    get:
+      description: Get list of all carousel slides
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Carousel'
+            type: array
+      summary: Get all carousel slides
+      tags:
+      - carousel
+    post:
+      consumes:
+      - application/json
+      description: Create a new carousel slide (admin only)
+      parameters:
+      - description: Carousel slide data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.Carousel'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.Carousel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create carousel slide
+      tags:
+      - carousel
+  /carousel/{id}:
+    delete:
+      description: Delete carousel slide by ID (admin only)
+      parameters:
+      - description: Slide ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete carousel slide
+      tags:
+      - carousel
+    get:
+      description: Get carousel slide details by ID
+      parameters:
+      - description: Slide ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Carousel'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get carousel slide by ID
+      tags:
+      - carousel
+    put:
+      consumes:
+      - application/json
+      description: Update carousel slide (admin only)
+      parameters:
+      - description: Slide ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Slide update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.Carousel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Carousel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update carousel slide
+      tags:
+      - carousel
+  /doctors:
+    get:
+      description: Get list of all doctors
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Doctor'
+            type: array
+      summary: Get all doctors
+      tags:
+      - doctors
+    post:
+      consumes:
+      - application/json
+      description: Create a new doctor (admin only)
+      parameters:
+      - description: Doctor data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.DoctorCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.Doctor'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create doctor
+      tags:
+      - doctors
+  /doctors/{id}:
+    delete:
+      description: Delete doctor by ID (admin only)
+      parameters:
+      - description: Doctor ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete doctor
+      tags:
+      - doctors
+    get:
+      description: Get doctor details by ID
+      parameters:
+      - description: Doctor ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Doctor'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get doctor by ID
+      tags:
+      - doctors
+    put:
+      consumes:
+      - application/json
+      description: Update doctor information (admin only)
+      parameters:
+      - description: Doctor ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Doctor update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.DoctorUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Doctor'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update doctor
+      tags:
+      - doctors
+  /doctors/{id}/schedule:
+    get:
+      description: Get schedule for a specific doctor
+      parameters:
+      - description: Doctor ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Schedule'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get doctor schedule
+      tags:
+      - doctors
+  /doctors/specialization/{id}:
+    get:
+      description: Get doctors filtered by specialization ID
+      parameters:
+      - description: Specialization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Doctor'
+            type: array
+      summary: Get doctors by specialization
+      tags:
+      - doctors
+  /licenses:
+    get:
+      description: Get list of all clinic licenses
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.License'
+            type: array
+      summary: Get all licenses
+      tags:
+      - licenses
+    post:
+      consumes:
+      - application/json
+      description: Create a new clinic license (admin only)
+      parameters:
+      - description: License data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.License'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.License'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create license
+      tags:
+      - licenses
+  /licenses/{id}:
+    delete:
+      description: Delete clinic license by ID (admin only)
+      parameters:
+      - description: License ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete license
+      tags:
+      - licenses
+    get:
+      description: Get license details by ID
+      parameters:
+      - description: License ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.License'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get license by ID
+      tags:
+      - licenses
+    put:
+      consumes:
+      - application/json
+      description: Update clinic license (admin only)
+      parameters:
+      - description: License ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: License update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.License'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.License'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update license
+      tags:
+      - licenses
+  /schedules:
+    get:
+      description: Get list of all schedules (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Schedule'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get all schedules
+      tags:
+      - schedules
+    post:
+      consumes:
+      - application/json
+      description: Create a new schedule (admin only)
+      parameters:
+      - description: Schedule data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.Schedule'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.Schedule'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create schedule
+      tags:
+      - schedules
+  /schedules/{id}:
+    delete:
+      description: Delete schedule by ID (admin only)
+      parameters:
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete schedule
+      tags:
+      - schedules
+    get:
+      description: Get schedule details by ID
+      parameters:
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Schedule'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get schedule by ID
+      tags:
+      - schedules
+    put:
+      consumes:
+      - application/json
+      description: Update schedule (admin only)
+      parameters:
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Schedule update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.Schedule'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Schedule'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update schedule
+      tags:
+      - schedules
+  /schedules/day/{day}:
+    get:
+      description: Get schedules filtered by day of week (1-7)
+      parameters:
+      - description: Day of week (1=Monday, 7=Sunday)
+        in: path
+        name: day
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Schedule'
+            type: array
+      summary: Get schedules by day
+      tags:
+      - schedules
+  /service-categories:
+    get:
+      description: Get list of all service categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.ServiceCategory'
+            type: array
+      summary: Get all service categories
+      tags:
+      - categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new service category (admin only)
+      parameters:
+      - description: Category data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.ServiceCategory'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.ServiceCategory'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create service category
+      tags:
+      - categories
+  /service-categories/{id}:
+    delete:
+      description: Delete service category by ID (admin only)
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete category
+      tags:
+      - categories
+    get:
+      description: Get service category details by ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.ServiceCategory'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get category by ID
+      tags:
+      - categories
+    put:
+      consumes:
+      - application/json
+      description: Update service category (admin only)
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Category update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.ServiceCategory'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.ServiceCategory'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update category
+      tags:
+      - categories
+  /service-categories/{id}/favorite:
+    patch:
+      description: Toggle favorite status of a category (admin only)
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Toggle favorite status
+      tags:
+      - categories
+  /service-categories/favorite:
+    get:
+      description: Get list of favorite service categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.ServiceCategory'
+            type: array
+      summary: Get favorite categories
+      tags:
+      - categories
+  /services:
+    get:
+      description: Get list of all medical services
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Service'
+            type: array
+      summary: Get all services
+      tags:
+      - services
+    post:
+      consumes:
+      - application/json
+      description: Create a new medical service (admin only)
+      parameters:
+      - description: Service data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.ServiceCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.Service'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create service
+      tags:
+      - services
+  /services/{id}:
+    delete:
+      description: Delete service by ID (admin only)
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete service
+      tags:
+      - services
+    get:
+      description: Get service details by ID
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Service'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get service by ID
+      tags:
+      - services
+    put:
+      consumes:
+      - application/json
+      description: Update service information (admin only)
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Service update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.ServiceCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Service'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update service
+      tags:
+      - services
+  /services/category/{id}:
+    get:
+      description: Get services filtered by category ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Service'
+            type: array
+      summary: Get services by category
+      tags:
+      - services
+  /services/specialization/{id}:
+    get:
+      description: Get services filtered by specialization ID
+      parameters:
+      - description: Specialization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Service'
+            type: array
+      summary: Get services by specialization
+      tags:
+      - services
+  /specializations:
+    get:
+      description: Get list of all specializations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Specialization'
+            type: array
+      summary: Get all specializations
+      tags:
+      - specializations
+    post:
+      consumes:
+      - application/json
+      description: Create a new specialization (admin only)
+      parameters:
+      - description: Specialization data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.Specialization'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.Specialization'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create specialization
+      tags:
+      - specializations
+  /specializations/{id}:
+    delete:
+      description: Delete specialization by ID (admin only)
+      parameters:
+      - description: Specialization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete specialization
+      tags:
+      - specializations
+    get:
+      description: Get specialization details by ID
+      parameters:
+      - description: Specialization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Specialization'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get specialization by ID
+      tags:
+      - specializations
+    put:
+      consumes:
+      - application/json
+      description: Update specialization (admin only)
+      parameters:
+      - description: Specialization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Specialization update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.Specialization'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Specialization'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update specialization
+      tags:
+      - specializations
+  /users:
+    get:
+      description: Get list of all users (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.UserResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      description: Delete user by ID (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - users
+    get:
+      description: Get user details by ID (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update user by ID (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - users
+  /users/me:
+    get:
+      description: Get currently authenticated user details
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update currently authenticated user details
+      parameters:
+      - description: User update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update current user
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
