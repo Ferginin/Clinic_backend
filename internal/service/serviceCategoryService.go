@@ -4,19 +4,27 @@ import (
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/repository"
 	"context"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type CategoryService struct {
-	categoryRepo *repository.ServiceCategoryRepository
-	specRepo     *repository.SpecializationRepository
+type CategoryServiceInterface interface {
+	CreateCategory(ctx context.Context, category *entity.ServiceCategory) (*entity.ServiceCategory, error)
+	GetAllCategories(ctx context.Context) ([]entity.ServiceCategory, error)
+	GetCategoryByID(ctx context.Context, id int) (*entity.ServiceCategory, error)
+	GetFavoriteCategories(ctx context.Context) ([]entity.ServiceCategory, error)
+	UpdateCategory(ctx context.Context, id int, category *entity.ServiceCategory) (*entity.ServiceCategory, error)
+	DeleteCategory(ctx context.Context, id int) error
+	ToggleFavorite(ctx context.Context, id int) error
 }
 
-func NewCategoryService(db *pgxpool.Pool) *CategoryService {
+type CategoryService struct {
+	categoryRepo repository.ServiceCategoryRepositoryInterface
+	specRepo     repository.SpecializationRepositoryInterface
+}
+
+func NewCategoryService(categoryRepo repository.ServiceCategoryRepositoryInterface, specRepo repository.SpecializationRepositoryInterface) CategoryServiceInterface {
 	return &CategoryService{
-		categoryRepo: repository.NewServiceCategoryRepository(db),
-		specRepo:     repository.NewSpecializationRepository(db),
+		categoryRepo: categoryRepo,
+		specRepo:     specRepo,
 	}
 }
 

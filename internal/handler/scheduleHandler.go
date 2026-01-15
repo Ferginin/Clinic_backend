@@ -1,23 +1,21 @@
 package handler
 
 import (
-	"Clinic_backend/config"
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/service"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ScheduleHandler struct {
-	scheduleService *service.ScheduleService
+	scheduleService service.ScheduleServiceInterface
 }
 
-func NewScheduleHandler(cfg *config.Config, db *pgxpool.Pool) *ScheduleHandler {
+func NewScheduleHandler(scheduleService service.ScheduleServiceInterface) *ScheduleHandler {
 	return &ScheduleHandler{
-		scheduleService: service.NewScheduleService(db),
+		scheduleService: scheduleService,
 	}
 }
 

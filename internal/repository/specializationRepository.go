@@ -10,11 +10,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type SpecializationRepositoryInterface interface {
+	Create(ctx context.Context, spec *entity.Specialization) (*entity.Specialization, error)
+	GetAll(ctx context.Context) ([]entity.Specialization, error)
+	GetByID(ctx context.Context, id int) (*entity.Specialization, error)
+	Update(ctx context.Context, id int, spec *entity.Specialization) (*entity.Specialization, error)
+	Delete(ctx context.Context, id int) error
+}
+
 type SpecializationRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewSpecializationRepository(db *pgxpool.Pool) *SpecializationRepository {
+func NewSpecializationRepository(db *pgxpool.Pool) SpecializationRepositoryInterface {
 	return &SpecializationRepository{db: db}
 }
 

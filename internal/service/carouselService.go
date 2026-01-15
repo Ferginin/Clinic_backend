@@ -4,17 +4,23 @@ import (
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/repository"
 	"context"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type CarouselService struct {
-	carouselRepo *repository.CarouselRepository
+type CarouselServiceInterface interface {
+	CreateSlide(ctx context.Context, carousel *entity.Carousel) (*entity.Carousel, error)
+	GetAllSlides(ctx context.Context) ([]entity.Carousel, error)
+	GetSlideByID(ctx context.Context, id int) (*entity.Carousel, error)
+	UpdateSlide(ctx context.Context, id int, carousel *entity.Carousel) (*entity.Carousel, error)
+	DeleteSlide(ctx context.Context, id int) error
 }
 
-func NewCarouselService(db *pgxpool.Pool) *CarouselService {
+type CarouselService struct {
+	carouselRepo repository.CarouselRepositoryInterface
+}
+
+func NewCarouselService(carouselRepo repository.CarouselRepositoryInterface) CarouselServiceInterface {
 	return &CarouselService{
-		carouselRepo: repository.NewCarouselRepository(db),
+		carouselRepo: carouselRepo,
 	}
 }
 

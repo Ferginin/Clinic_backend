@@ -10,11 +10,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type RoleRepositoryInterface interface {
+	GetAll(ctx context.Context) ([]entity.Role, error)
+	GetByID(ctx context.Context, id int) (*entity.Role, error)
+	GetByName(ctx context.Context, name string) (*entity.Role, error)
+}
+
 type RoleRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewRoleRepository(db *pgxpool.Pool) *RoleRepository {
+func NewRoleRepository(db *pgxpool.Pool) RoleRepositoryInterface {
 	return &RoleRepository{db: db}
 }
 

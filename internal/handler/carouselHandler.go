@@ -1,23 +1,21 @@
 package handler
 
 import (
-	"Clinic_backend/config"
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/service"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CarouselHandler struct {
-	carouselService *service.CarouselService
+	carouselService service.CarouselServiceInterface
 }
 
-func NewCarouselHandler(cfg *config.Config, db *pgxpool.Pool) *CarouselHandler {
+func NewCarouselHandler(carouselService service.CarouselServiceInterface) *CarouselHandler {
 	return &CarouselHandler{
-		carouselService: service.NewCarouselService(db),
+		carouselService: carouselService,
 	}
 }
 

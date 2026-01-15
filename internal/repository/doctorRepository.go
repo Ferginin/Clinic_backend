@@ -10,11 +10,23 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type DoctorRepositoryInterface interface {
+	Create(ctx context.Context, doctor *entity.Doctor) (*entity.Doctor, error)
+	GetAll(ctx context.Context) ([]entity.Doctor, error)
+	GetByID(ctx context.Context, id int) (*entity.Doctor, error)
+	GetBySpecialization(ctx context.Context, specializationID int) ([]entity.Doctor, error)
+	Update(ctx context.Context, id int, doctor *entity.Doctor) (*entity.Doctor, error)
+	Delete(ctx context.Context, id int) error
+	AddSpecialization(ctx context.Context, doctorID, specializationID int) error
+	RemoveSpecialization(ctx context.Context, doctorID, specializationID int) error
+	GetSpecializations(ctx context.Context, doctorID int) ([]entity.Specialization, error)
+}
+
 type DoctorRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewDoctorRepository(db *pgxpool.Pool) *DoctorRepository {
+func NewDoctorRepository(db *pgxpool.Pool) DoctorRepositoryInterface {
 	return &DoctorRepository{db: db}
 }
 

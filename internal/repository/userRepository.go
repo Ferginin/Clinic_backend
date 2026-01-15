@@ -10,11 +10,20 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type UserRepositoryInterface interface {
+	Create(ctx context.Context, user *entity.User) (*entity.User, error)
+	GetByEmail(ctx context.Context, email string) (*entity.User, error)
+	GetByID(ctx context.Context, id int) (*entity.User, error)
+	GetAll(ctx context.Context) ([]entity.User, error)
+	Update(ctx context.Context, id int, user *entity.User) (*entity.User, error)
+	Delete(ctx context.Context, id int) error
+}
+
 type UserRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
+func NewUserRepository(db *pgxpool.Pool) UserRepositoryInterface {
 	return &UserRepository{db: db}
 }
 
@@ -55,8 +64,8 @@ func (r *UserRepository) Create(ctx context.Context, user *entity.User) (*entity
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*entity.User, error) {
 	query := `
-		SELECT u.id, u.username, u.email, u.password, u.confirmed, u.blocked, 
-		       u.role_id, COALESCE(r.name, 'user') as role_name, u.created_at, u.updated_at
+		SELECT u.username, u.email, u.password, u.confirmed, u.blocked, 
+		    	COALESCE(r.name, 'user') as role_name
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
 		WHERE u.email = $1
@@ -64,16 +73,16 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*entity.
 
 	var user entity.User
 	err := r.db.QueryRow(ctx, query, email).Scan(
-		&user.ID,
+		//&user.ID,
 		&user.Username,
 		&user.Email,
 		&user.Password,
 		&user.Confirmed,
 		&user.Blocked,
-		&user.RoleID,
+		//&user.RoleID,
 		&user.RoleName,
-		&user.CreatedAt,
-		&user.UpdatedAt,
+		//&user.CreatedAt,
+		//&user.UpdatedAt,
 	)
 
 	if err != nil {

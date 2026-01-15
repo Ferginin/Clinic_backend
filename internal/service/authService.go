@@ -9,19 +9,24 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthService struct {
-	cfg      *config.Config
-	userRepo *repository.UserRepository
+type AuthServiceInterface interface {
+	Register(ctx context.Context, req *entity.UserRegisterRequest) (*entity.AuthResponse, error)
+	Login(ctx context.Context, req *entity.UserLoginRequest) (*entity.AuthResponse, error)
+	generateTokens(user *entity.User) (string, string, error)
 }
 
-func NewAuthService(cfg *config.Config, db *pgxpool.Pool) *AuthService {
+type AuthService struct {
+	cfg      *config.Config
+	userRepo repository.UserRepositoryInterface
+}
+
+func NewAuthService(cfg *config.Config, userRepo repository.UserRepositoryInterface) AuthServiceInterface {
 	return &AuthService{
 		cfg:      cfg,
-		userRepo: repository.NewUserRepository(db),
+		userRepo: userRepo,
 	}
 }
 

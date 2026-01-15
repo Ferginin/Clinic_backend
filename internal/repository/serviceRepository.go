@@ -10,11 +10,21 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type ServiceRepositoryInterface interface {
+	Create(ctx context.Context, service *entity.Service) (*entity.Service, error)
+	GetAll(ctx context.Context) ([]entity.Service, error)
+	GetByID(ctx context.Context, id int) (*entity.Service, error)
+	GetByCategory(ctx context.Context, categoryID int) ([]entity.Service, error)
+	GetBySpecialization(ctx context.Context, specializationID int) ([]entity.Service, error)
+	Update(ctx context.Context, id int, service *entity.Service) (*entity.Service, error)
+	Delete(ctx context.Context, id int) error
+}
+
 type ServiceRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewServiceRepository(db *pgxpool.Pool) *ServiceRepository {
+func NewServiceRepository(db *pgxpool.Pool) ServiceRepositoryInterface {
 	return &ServiceRepository{db: db}
 }
 

@@ -10,11 +10,20 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type ScheduleRepositoryInterface interface {
+	Create(ctx context.Context, schedule *entity.Schedule) (*entity.Schedule, error)
+	GetAll(ctx context.Context) ([]entity.Schedule, error)
+	GetByID(ctx context.Context, id int) (*entity.Schedule, error)
+	GetByDay(ctx context.Context, day int) ([]entity.Schedule, error)
+	Update(ctx context.Context, id int, schedule *entity.Schedule) (*entity.Schedule, error)
+	Delete(ctx context.Context, id int) error
+}
+
 type ScheduleRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewScheduleRepository(db *pgxpool.Pool) *ScheduleRepository {
+func NewScheduleRepository(db *pgxpool.Pool) ScheduleRepositoryInterface {
 	return &ScheduleRepository{db: db}
 }
 

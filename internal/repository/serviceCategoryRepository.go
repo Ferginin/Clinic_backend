@@ -10,11 +10,21 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type ServiceCategoryRepositoryInterface interface {
+	Create(ctx context.Context, category *entity.ServiceCategory) (*entity.ServiceCategory, error)
+	GetAll(ctx context.Context) ([]entity.ServiceCategory, error)
+	GetByID(ctx context.Context, id int) (*entity.ServiceCategory, error)
+	GetFavorites(ctx context.Context) ([]entity.ServiceCategory, error)
+	Update(ctx context.Context, id int, category *entity.ServiceCategory) (*entity.ServiceCategory, error)
+	Delete(ctx context.Context, id int) error
+	SetFavorite(ctx context.Context, id int, favorite bool) error
+}
+
 type ServiceCategoryRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewServiceCategoryRepository(db *pgxpool.Pool) *ServiceCategoryRepository {
+func NewServiceCategoryRepository(db *pgxpool.Pool) ServiceCategoryRepositoryInterface {
 	return &ServiceCategoryRepository{db: db}
 }
 

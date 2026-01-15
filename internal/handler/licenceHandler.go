@@ -1,23 +1,21 @@
 package handler
 
 import (
-	"Clinic_backend/config"
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/service"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type LicenseHandler struct {
-	licenseService *service.LicenseService
+	licenseService service.LicenseServiceInterface
 }
 
-func NewLicenseHandler(cfg *config.Config, db *pgxpool.Pool) *LicenseHandler {
+func NewLicenseHandler(licenseService service.LicenseServiceInterface) *LicenseHandler {
 	return &LicenseHandler{
-		licenseService: service.NewLicenseService(db),
+		licenseService: licenseService,
 	}
 }
 

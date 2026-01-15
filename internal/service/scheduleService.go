@@ -5,17 +5,24 @@ import (
 	"Clinic_backend/internal/repository"
 	"Clinic_backend/internal/utils"
 	"context"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type ScheduleService struct {
-	scheduleRepo *repository.ScheduleRepository
+type ScheduleServiceInterface interface {
+	CreateSchedule(ctx context.Context, schedule *entity.Schedule) (*entity.Schedule, error)
+	GetAllSchedules(ctx context.Context) ([]entity.Schedule, error)
+	GetScheduleByID(ctx context.Context, id int) (*entity.Schedule, error)
+	GetScheduleByDay(ctx context.Context, day int) ([]entity.Schedule, error)
+	UpdateSchedule(ctx context.Context, id int, schedule *entity.Schedule) (*entity.Schedule, error)
+	DeleteSchedule(ctx context.Context, id int) error
 }
 
-func NewScheduleService(db *pgxpool.Pool) *ScheduleService {
+type ScheduleService struct {
+	scheduleRepo repository.ScheduleRepositoryInterface
+}
+
+func NewScheduleService(scheduleRepo repository.ScheduleRepositoryInterface) ScheduleServiceInterface {
 	return &ScheduleService{
-		scheduleRepo: repository.NewScheduleRepository(db),
+		scheduleRepo: scheduleRepo,
 	}
 }
 

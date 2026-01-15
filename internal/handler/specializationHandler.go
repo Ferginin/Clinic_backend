@@ -1,23 +1,21 @@
 package handler
 
 import (
-	"Clinic_backend/config"
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/service"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type SpecializationHandler struct {
-	specService *service.SpecializationService
+	specService service.SpecializationServiceInterface
 }
 
-func NewSpecializationHandler(cfg *config.Config, db *pgxpool.Pool) *SpecializationHandler {
+func NewSpecializationHandler(specService service.SpecializationServiceInterface) *SpecializationHandler {
 	return &SpecializationHandler{
-		specService: service.NewSpecializationService(db),
+		specService: specService,
 	}
 }
 

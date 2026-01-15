@@ -263,7 +263,7 @@ definitions:
       username:
         type: string
     type: object
-host: localhost:8080
+host: localhost:8000
 info:
   contact:
     email: support@clinic.com

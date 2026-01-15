@@ -10,11 +10,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type CarouselRepositoryInterface interface {
+	Create(ctx context.Context, course *entity.Carousel) (*entity.Carousel, error)
+	GetAll(ctx context.Context) ([]entity.Carousel, error)
+	GetByID(ctx context.Context, id int) (*entity.Carousel, error)
+	Update(ctx context.Context, id int, carousel *entity.Carousel) (*entity.Carousel, error)
+	Delete(ctx context.Context, id int) error
+}
+
 type CarouselRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewCarouselRepository(db *pgxpool.Pool) *CarouselRepository {
+func NewCarouselRepository(db *pgxpool.Pool) CarouselRepositoryInterface {
 	return &CarouselRepository{db: db}
 }
 

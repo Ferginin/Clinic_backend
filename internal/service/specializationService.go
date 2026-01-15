@@ -4,17 +4,23 @@ import (
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/repository"
 	"context"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type SpecializationService struct {
-	specRepo *repository.SpecializationRepository
+type SpecializationServiceInterface interface {
+	CreateSpecialization(ctx context.Context, spec *entity.Specialization) (*entity.Specialization, error)
+	GetAllSpecializations(ctx context.Context) ([]entity.Specialization, error)
+	GetSpecializationByID(ctx context.Context, id int) (*entity.Specialization, error)
+	UpdateSpecialization(ctx context.Context, id int, spec *entity.Specialization) (*entity.Specialization, error)
+	DeleteSpecialization(ctx context.Context, id int) error
 }
 
-func NewSpecializationService(db *pgxpool.Pool) *SpecializationService {
+type SpecializationService struct {
+	specRepo repository.SpecializationRepositoryInterface
+}
+
+func NewSpecializationService(specRepo repository.SpecializationRepositoryInterface) SpecializationServiceInterface {
 	return &SpecializationService{
-		specRepo: repository.NewSpecializationRepository(db),
+		specRepo: specRepo,
 	}
 }
 

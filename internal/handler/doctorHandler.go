@@ -1,23 +1,21 @@
 package handler
 
 import (
-	"Clinic_backend/config"
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/service"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DoctorHandler struct {
-	doctorService *service.DoctorService
+	doctorService service.DoctorServiceInterface
 }
 
-func NewDoctorHandler(cfg *config.Config, db *pgxpool.Pool) *DoctorHandler {
+func NewDoctorHandler(doctorService service.DoctorServiceInterface) *DoctorHandler {
 	return &DoctorHandler{
-		doctorService: service.NewDoctorService(db),
+		doctorService: doctorService,
 	}
 }
 

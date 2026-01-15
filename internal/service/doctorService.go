@@ -5,28 +5,36 @@ import (
 	"Clinic_backend/internal/repository"
 	"context"
 	"errors"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type DoctorService struct {
-	doctorRepo *repository.DoctorRepository
-	specRepo   *repository.SpecializationRepository
-	schedRepo  *repository.ScheduleRepository
+type DoctorServiceInterface interface {
+	CreateDoctor(ctx context.Context, req *entity.DoctorCreateRequest) (*entity.Doctor, error)
+	GetAllDoctors(ctx context.Context) ([]entity.Doctor, error)
+	GetDoctorByID(ctx context.Context, id int) (*entity.Doctor, error)
+	GetDoctorsBySpecialization(ctx context.Context, specID int) ([]entity.Doctor, error)
+	UpdateDoctor(ctx context.Context, id int, req *entity.DoctorUpdateRequest) (*entity.Doctor, error)
+	DeleteDoctor(ctx context.Context, id int) error
+	GetDoctorSchedule(ctx context.Context, doctorID int) (*entity.Schedule, error)
 }
 
-func NewDoctorService(db *pgxpool.Pool) *DoctorService {
+type DoctorService struct {
+	doctorRepo   repository.DoctorRepositoryInterface
+	specRepo     repository.SpecializationRepositoryInterface
+	scheduleRepo repository.ScheduleRepositoryInterface
+}
+
+func NewDoctorService(doctorRepo repository.DoctorRepositoryInterface, specRepo repository.SpecializationRepositoryInterface, scheduleRepo repository.ScheduleRepositoryInterface) DoctorServiceInterface {
 	return &DoctorService{
-		doctorRepo: repository.NewDoctorRepository(db),
-		specRepo:   repository.NewSpecializationRepository(db),
-		schedRepo:  repository.NewScheduleRepository(db),
+		doctorRepo:   doctorRepo,
+		specRepo:     specRepo,
+		scheduleRepo: scheduleRepo,
 	}
 }
 
 func (s *DoctorService) CreateDoctor(ctx context.Context, req *entity.DoctorCreateRequest) (*entity.Doctor, error) {
 	// Валидация schedule_id если указан
 	if req.ScheduleID != nil {
-		_, err := s.schedRepo.GetByID(ctx, *req.ScheduleID)
+		_, err := s.scheduleRepo.GetByID(ctx, *req.ScheduleID)
 		if err != nil {
 			return nil, errors.New("invalid schedule_id")
 		}
@@ -59,7 +67,7 @@ func (s *DoctorService) CreateDoctor(ctx context.Context, req *entity.DoctorCrea
 
 	// Загружаем расписание если есть
 	if created.ScheduleID != nil {
-		schedule, err := s.schedRepo.GetByID(ctx, *created.ScheduleID)
+		schedule, err := s.scheduleRepo.GetByID(ctx, *created.ScheduleID)
 		if err == nil {
 			created.Schedule = schedule
 		}
@@ -81,7 +89,7 @@ func (s *DoctorService) GetAllDoctors(ctx context.Context) ([]entity.Doctor, err
 
 		// Загружаем расписание
 		if doctors[i].ScheduleID != nil {
-			schedule, err := s.schedRepo.GetByID(ctx, *doctors[i].ScheduleID)
+			schedule, err := s.scheduleRepo.GetByID(ctx, *doctors[i].ScheduleID)
 			if err == nil {
 				doctors[i].Schedule = schedule
 			}
@@ -103,7 +111,7 @@ func (s *DoctorService) GetDoctorByID(ctx context.Context, id int) (*entity.Doct
 
 	// Загружаем расписание
 	if doctor.ScheduleID != nil {
-		schedule, err := s.schedRepo.GetByID(ctx, *doctor.ScheduleID)
+		schedule, err := s.scheduleRepo.GetByID(ctx, *doctor.ScheduleID)
 		if err == nil {
 			doctor.Schedule = schedule
 		}
@@ -159,12 +167,18 @@ func (s *DoctorService) UpdateDoctor(ctx context.Context, id int, req *entity.Do
 
 		// Удаляем старые
 		for _, spec := range currentSpecs {
-			s.doctorRepo.RemoveSpecialization(ctx, id, spec.ID)
+			err := s.doctorRepo.RemoveSpecialization(ctx, id, spec.ID)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// Добавляем новые
 		for _, specID := range req.SpecializationIDs {
-			s.doctorRepo.AddSpecialization(ctx, id, specID)
+			err := s.doctorRepo.AddSpecialization(ctx, id, specID)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -186,5 +200,5 @@ func (s *DoctorService) GetDoctorSchedule(ctx context.Context, doctorID int) (*e
 		return nil, errors.New("doctor has no schedule")
 	}
 
-	return s.schedRepo.GetByID(ctx, *doctor.ScheduleID)
+	return s.scheduleRepo.GetByID(ctx, *doctor.ScheduleID)
 }

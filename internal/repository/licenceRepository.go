@@ -10,11 +10,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type LicenseRepositoryInterface interface {
+	Create(ctx context.Context, license *entity.License) (*entity.License, error)
+	GetAll(ctx context.Context) ([]entity.License, error)
+	GetByID(ctx context.Context, id int) (*entity.License, error)
+	Update(ctx context.Context, id int, license *entity.License) (*entity.License, error)
+	Delete(ctx context.Context, id int) error
+}
+
 type LicenseRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewLicenseRepository(db *pgxpool.Pool) *LicenseRepository {
+func NewLicenseRepository(db *pgxpool.Pool) LicenseRepositoryInterface {
 	return &LicenseRepository{db: db}
 }
 

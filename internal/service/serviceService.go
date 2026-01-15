@@ -5,21 +5,29 @@ import (
 	"Clinic_backend/internal/repository"
 	"context"
 	"errors"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type ServiceService struct {
-	serviceRepo  *repository.ServiceRepository
-	categoryRepo *repository.ServiceCategoryRepository
-	specRepo     *repository.SpecializationRepository
+type ServiceServiceInterface interface {
+	CreateService(ctx context.Context, req *entity.ServiceCreateRequest) (*entity.Service, error)
+	GetAllServices(ctx context.Context) ([]entity.Service, error)
+	GetServiceByID(ctx context.Context, id int) (*entity.Service, error)
+	GetServicesByCategory(ctx context.Context, categoryID int) ([]entity.Service, error)
+	GetServicesBySpecialization(ctx context.Context, specID int) ([]entity.Service, error)
+	UpdateService(ctx context.Context, id int, req *entity.ServiceCreateRequest) (*entity.Service, error)
+	DeleteService(ctx context.Context, id int) error
 }
 
-func NewServiceService(db *pgxpool.Pool) *ServiceService {
+type ServiceService struct {
+	serviceRepo  repository.ServiceRepositoryInterface
+	categoryRepo repository.ServiceCategoryRepositoryInterface
+	specRepo     repository.SpecializationRepositoryInterface
+}
+
+func NewServiceService(serviceRepo repository.ServiceRepositoryInterface, categoryRepo repository.ServiceCategoryRepositoryInterface, specRepo repository.SpecializationRepositoryInterface) ServiceServiceInterface {
 	return &ServiceService{
-		serviceRepo:  repository.NewServiceRepository(db),
-		categoryRepo: repository.NewServiceCategoryRepository(db),
-		specRepo:     repository.NewSpecializationRepository(db),
+		serviceRepo:  serviceRepo,
+		categoryRepo: categoryRepo,
+		specRepo:     specRepo,
 	}
 }
 

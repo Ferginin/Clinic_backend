@@ -4,6 +4,8 @@ import (
 	"Clinic_backend/config"
 	"Clinic_backend/internal/handler"
 	"Clinic_backend/internal/middleware"
+	"Clinic_backend/internal/repository"
+	"Clinic_backend/internal/service"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -39,18 +41,37 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	// Initialize handlers
-	authHandler := handler.NewAuthHandler(cfg, db)
-	userHandler := handler.NewUserHandler(cfg, db)
-	doctorHandler := handler.NewDoctorHandler(cfg, db)
-	serviceHandler := handler.NewServiceHandler(cfg, db)
-	categoryHandler := handler.NewCategoryHandler(cfg, db)
-	specializationHandler := handler.NewSpecializationHandler(cfg, db)
-	scheduleHandler := handler.NewScheduleHandler(cfg, db)
-	licenseHandler := handler.NewLicenseHandler(cfg, db)
-	carouselHandler := handler.NewCarouselHandler(cfg, db)
+	// Init Repos
+	userRepo := repository.NewUserRepository(db)
+	doctorRepo := repository.NewDoctorRepository(db)
+	serviceRepo := repository.NewServiceRepository(db)
+	serviceCategoryRepo := repository.NewServiceCategoryRepository(db)
+	specRepo := repository.NewSpecializationRepository(db)
+	scheduleRepo := repository.NewScheduleRepository(db)
+	licenseRepo := repository.NewLicenseRepository(db)
+	carouselRepo := repository.NewCarouselRepository(db)
 
-	// API v1
+	// Init Services
+	authService := service.NewAuthService(cfg, userRepo)
+	doctorService := service.NewDoctorService(doctorRepo, specRepo, scheduleRepo)
+	serviceService := service.NewServiceService(serviceRepo, serviceCategoryRepo, specRepo)
+	serviceCategoryService := service.NewCategoryService(serviceCategoryRepo, specRepo)
+	specializationService := service.NewSpecializationService(specRepo)
+	scheduleService := service.NewScheduleService(scheduleRepo)
+	licenseService := service.NewLicenseService(licenseRepo)
+	carouselService := service.NewCarouselService(carouselRepo)
+
+	// Init handlers
+	authHandler := handler.NewAuthHandler(authService)
+	userHandler := handler.NewUserHandler(userRepo)
+	doctorHandler := handler.NewDoctorHandler(doctorService)
+	serviceHandler := handler.NewServiceHandler(serviceService)
+	serviceCategoryHandler := handler.NewCategoryHandler(serviceCategoryService)
+	specializationHandler := handler.NewSpecializationHandler(specializationService)
+	scheduleHandler := handler.NewScheduleHandler(scheduleService)
+	licenseHandler := handler.NewLicenseHandler(licenseService)
+	carouselHandler := handler.NewCarouselHandler(carouselService)
+
 	api := r.Group("/api/v1")
 	{
 		// Auth routes (public)
@@ -122,19 +143,19 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		categories := api.Group("/service-categories")
 		{
 			// Public routes
-			categories.GET("", categoryHandler.GetAllCategories)
-			categories.GET("/:id", categoryHandler.GetCategoryByID)
-			categories.GET("/favorite", categoryHandler.GetFavorites)
+			categories.GET("", serviceCategoryHandler.GetAllCategories)
+			categories.GET("/:id", serviceCategoryHandler.GetCategoryByID)
+			categories.GET("/favorite", serviceCategoryHandler.GetFavorites)
 
 			// Admin only
 			categoriesAdmin := categories.Group("")
 			categoriesAdmin.Use(middleware.AuthMiddleware(cfg))
 			categoriesAdmin.Use(middleware.RoleMiddleware("admin"))
 			{
-				categoriesAdmin.POST("", categoryHandler.CreateCategory)
-				categoriesAdmin.PUT("/:id", categoryHandler.UpdateCategory)
-				categoriesAdmin.PATCH("/:id/favorite", categoryHandler.ToggleFavorite)
-				categoriesAdmin.DELETE("/:id", categoryHandler.DeleteCategory)
+				categoriesAdmin.POST("", serviceCategoryHandler.CreateCategory)
+				categoriesAdmin.PUT("/:id", serviceCategoryHandler.UpdateCategory)
+				categoriesAdmin.PATCH("/:id/favorite", serviceCategoryHandler.ToggleFavorite)
+				categoriesAdmin.DELETE("/:id", serviceCategoryHandler.DeleteCategory)
 			}
 		}
 
