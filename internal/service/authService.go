@@ -71,7 +71,7 @@ func (s *AuthService) Register(ctx context.Context, req *entity.UserRegisterRequ
 func (s *AuthService) Login(ctx context.Context, req *entity.UserLoginRequest) (*entity.AuthResponse, error) {
 	user, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, errors.New("invalid credentials, can't get user by email: " + err.Error())
 	}
 
 	if user.Blocked {
@@ -80,7 +80,7 @@ func (s *AuthService) Login(ctx context.Context, req *entity.UserLoginRequest) (
 
 	// Проверяем пароль
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, errors.New("invalid credentials, password mismatch")
 	}
 
 	// Генерируем токены

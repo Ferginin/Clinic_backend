@@ -103,10 +103,10 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		doctors := api.Group("/doctors")
 		{
 			// Public routes
-			doctors.GET("", doctorHandler.GetAllDoctors)
-			doctors.GET("/:id", doctorHandler.GetDoctorByID)
 			doctors.GET("/specialization/:id", doctorHandler.GetBySpecialization)
 			doctors.GET("/:id/schedule", doctorHandler.GetDoctorSchedule)
+			doctors.GET("/:id", doctorHandler.GetDoctorByID)
+			doctors.GET("", doctorHandler.GetAllDoctors)
 
 			// Admin only
 			doctorsAdmin := doctors.Group("")
@@ -123,10 +123,10 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		services := api.Group("/services")
 		{
 			// Public routes
-			services.GET("", serviceHandler.GetAllServices)
-			services.GET("/:id", serviceHandler.GetServiceByID)
 			services.GET("/category/:id", serviceHandler.GetByCategory)
 			services.GET("/specialization/:id", serviceHandler.GetBySpecialization)
+			services.GET("/:id", serviceHandler.GetServiceByID)
+			services.GET("", serviceHandler.GetAllServices)
 
 			// Admin only
 			servicesAdmin := services.Group("")
@@ -144,8 +144,8 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		{
 			// Public routes
 			categories.GET("", serviceCategoryHandler.GetAllCategories)
-			categories.GET("/:id", serviceCategoryHandler.GetCategoryByID)
 			categories.GET("/favorite", serviceCategoryHandler.GetFavorites)
+			categories.GET("/:id", serviceCategoryHandler.GetCategoryByID)
 
 			// Admin only
 			categoriesAdmin := categories.Group("")
@@ -181,8 +181,8 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		schedules := api.Group("/schedules")
 		{
 			// Public routes
-			schedules.GET("/:id", scheduleHandler.GetScheduleByID)
 			schedules.GET("/day/:day", scheduleHandler.GetByDay)
+			schedules.GET("/:id", scheduleHandler.GetScheduleByID)
 
 			// Admin only
 			schedulesAdmin := schedules.Group("")

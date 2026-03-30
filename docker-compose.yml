@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: Medlife_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=medlife_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - IP_ADDRESS=0.0.0.0
+      - API_PORT=8000
+      - JWT_SECRET=your_super_secret_jwt_key_change_in_production
+      - JWT_EXPIRE_HOURS=24
+      - JWT_REFRESH_EXPIRE_HOURS=168
+      - ENVIRONMENT=development
+    depends_on:
+      - postgres
+    networks:
+      - medlife-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../Clinic_frontend
+      dockerfile: Dockerfile
+    container_name: Medlife_frontend
+    ports:
+      - "4200:4200"
+    environment:
+      - ENVIRONMENT=development
+    depends_on:
+      - backend
+    networks:
+      - medlife-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: medlife_DB
+    environment:
+      - POSTGRES_DB=medlife_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./internal/storage/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - medlife-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  medlife-network:
+    driver: bridge

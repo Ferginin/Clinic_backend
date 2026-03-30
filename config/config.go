@@ -17,7 +17,6 @@ type Env struct {
 	IpAddress  string `env:"IP_ADDRESS"`
 	ApiPort    int    `env:"API_PORT"`
 
-	// JWT
 	JWTSecret             string `env:"JWT_SECRET"`
 	JWTExpireHours        int    `env:"JWT_EXPIRE_HOURS"`
 	JWTRefreshExpireHours int    `env:"JWT_REFRESH_EXPIRE_HOURS"`

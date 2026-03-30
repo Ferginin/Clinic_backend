@@ -29,9 +29,19 @@ func NewUserHandler(userRepo repository.UserRepositoryInterface) *UserHandler {
 // @Failure 401 {object} map[string]string
 // @Router /users/me [get]
 func (h *UserHandler) GetMe(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
 
-	user, err := h.userRepo.GetByID(c.Request.Context(), userID.(int))
+	userID, ok := userIDValue.(int)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+		return
+	}
+
+	user, err := h.userRepo.GetByID(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
@@ -52,7 +62,17 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Router /users/me [put]
 func (h *UserHandler) UpdateMe(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userID, ok := userIDValue.(int)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+		return
+	}
 
 	var req entity.User
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -60,7 +80,7 @@ func (h *UserHandler) UpdateMe(c *gin.Context) {
 		return
 	}
 
-	updatedUser, err := h.userRepo.Update(c.Request.Context(), userID.(int), &req)
+	updatedUser, err := h.userRepo.Update(c.Request.Context(), userID, &req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

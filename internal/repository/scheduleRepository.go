@@ -78,15 +78,19 @@ func (r *ScheduleRepository) GetAll(ctx context.Context) ([]entity.Schedule, err
 
 func (r *ScheduleRepository) GetByID(ctx context.Context, id int) (*entity.Schedule, error) {
 	query := `
-		SELECT id, day, time_from, time_to, created_at, updated_at 
+		SELECT day, time_from, time_to
 		FROM schedules 
 		WHERE id = $1
 	`
 
 	var schedule entity.Schedule
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&schedule.ID, &schedule.Day, &schedule.TimeFrom, &schedule.TimeTo,
-		&schedule.CreatedAt, &schedule.UpdatedAt,
+		//&schedule.ID,
+		&schedule.Day,
+		&schedule.TimeFrom,
+		&schedule.TimeTo,
+		//&schedule.CreatedAt,
+		//&schedule.UpdatedAt,
 	)
 
 	if err != nil {
@@ -101,7 +105,7 @@ func (r *ScheduleRepository) GetByID(ctx context.Context, id int) (*entity.Sched
 
 func (r *ScheduleRepository) GetByDay(ctx context.Context, day int) ([]entity.Schedule, error) {
 	query := `
-		SELECT id, day, time_from, time_to, created_at, updated_at 
+		SELECT day, time_from, time_to
 		FROM schedules 
 		WHERE day = $1 
 		ORDER BY time_from
@@ -117,8 +121,11 @@ func (r *ScheduleRepository) GetByDay(ctx context.Context, day int) ([]entity.Sc
 	for rows.Next() {
 		var schedule entity.Schedule
 		err := rows.Scan(
-			&schedule.ID, &schedule.Day, &schedule.TimeFrom, &schedule.TimeTo,
-			&schedule.CreatedAt, &schedule.UpdatedAt,
+			&schedule.Day,
+			&schedule.TimeFrom,
+			&schedule.TimeTo,
+			//&schedule.CreatedAt,
+			//&schedule.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan schedule: %w", err)
@@ -134,15 +141,19 @@ func (r *ScheduleRepository) Update(ctx context.Context, id int, schedule *entit
 		UPDATE schedules
 		SET day = $1, time_from = $2, time_to = $3, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $4
-		RETURNING id, day, time_from, time_to, created_at, updated_at
+		RETURNING day, time_from, time_to
 	`
 
 	var updated entity.Schedule
 	err := r.db.QueryRow(ctx, query,
 		schedule.Day, schedule.TimeFrom, schedule.TimeTo, id,
 	).Scan(
-		&updated.ID, &updated.Day, &updated.TimeFrom, &updated.TimeTo,
-		&updated.CreatedAt, &updated.UpdatedAt,
+		//&updated.ID,
+		&updated.Day,
+		&updated.TimeFrom,
+		&updated.TimeTo,
+		//&updated.CreatedAt,
+		//&updated.UpdatedAt,
 	)
 
 	if err != nil {

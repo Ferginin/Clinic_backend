@@ -28,6 +28,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 		tokenString := parts[1]
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			fmt.Println("token: ", token)
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
@@ -46,7 +47,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
+		fmt.Println("claims: ", claims)
 		c.Set("user_id", int(claims["user_id"].(float64)))
 		c.Set("email", claims["email"].(string))
 		c.Set("role", claims["role"].(string))

@@ -1,0 +1,11 @@
+.env
+README.md
+.gitignore
+.git
+.idea/
+.vscode/
+tests/
+tmp/
+Dockerfile
+docker-compose.yml
+

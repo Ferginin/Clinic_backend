@@ -18,7 +18,7 @@ import (
 
 // @title Clinic Backend API
 // @version 1.0
-// @description API для управления частной клиникой
+// @description API для управления клиникой Clinic
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -27,7 +27,7 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host localhost:8000
+// @host localhost:8080
 // @BasePath /api/v1
 
 // @securityDefinitions.apikey BearerAuth

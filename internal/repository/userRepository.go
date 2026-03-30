@@ -64,7 +64,7 @@ func (r *UserRepository) Create(ctx context.Context, user *entity.User) (*entity
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*entity.User, error) {
 	query := `
-		SELECT u.username, u.email, u.password, u.confirmed, u.blocked, 
+		SELECT u.id, u.username, u.email, u.password, u.confirmed, u.blocked, 
 		    	COALESCE(r.name, 'user') as role_name
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
@@ -73,7 +73,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*entity.
 
 	var user entity.User
 	err := r.db.QueryRow(ctx, query, email).Scan(
-		//&user.ID,
+		&user.ID,
 		&user.Username,
 		&user.Email,
 		&user.Password,

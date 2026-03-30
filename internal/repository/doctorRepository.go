@@ -96,20 +96,20 @@ func (r *DoctorRepository) GetAll(ctx context.Context) ([]entity.Doctor, error) 
 
 func (r *DoctorRepository) GetByID(ctx context.Context, id int) (*entity.Doctor, error) {
 	query := `
-		SELECT id, fullname, description, doctor_photo, schedule_id, created_at, updated_at
+		SELECT fullname, description, doctor_photo, schedule_id
 		FROM doctors
 		WHERE id = $1
 	`
 
 	var doctor entity.Doctor
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&doctor.ID,
+		//&doctor.ID,
 		&doctor.Fullname,
 		&doctor.Description,
 		&doctor.DoctorPhoto,
 		&doctor.ScheduleID,
-		&doctor.CreatedAt,
-		&doctor.UpdatedAt,
+		//&doctor.CreatedAt,
+		//&doctor.UpdatedAt,
 	)
 
 	if err != nil {
@@ -124,7 +124,7 @@ func (r *DoctorRepository) GetByID(ctx context.Context, id int) (*entity.Doctor,
 
 func (r *DoctorRepository) GetBySpecialization(ctx context.Context, specializationID int) ([]entity.Doctor, error) {
 	query := `
-		SELECT d.id, d.fullname, d.description, d.doctor_photo, d.schedule_id, d.created_at, d.updated_at
+		SELECT d.fullname, d.description, d.doctor_photo, d.schedule_id
 		FROM doctors d
 		INNER JOIN doctor_specializations ds ON d.id = ds.doctor_id
 		WHERE ds.specialization_id = $1
@@ -141,13 +141,13 @@ func (r *DoctorRepository) GetBySpecialization(ctx context.Context, specializati
 	for rows.Next() {
 		var doctor entity.Doctor
 		err := rows.Scan(
-			&doctor.ID,
+			//&doctor.ID,
 			&doctor.Fullname,
 			&doctor.Description,
 			&doctor.DoctorPhoto,
 			&doctor.ScheduleID,
-			&doctor.CreatedAt,
-			&doctor.UpdatedAt,
+			//&doctor.UpdatedAt,
+			//&doctor.CreatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan doctor: %w", err)
@@ -163,10 +163,10 @@ func (r *DoctorRepository) Update(ctx context.Context, id int, doctor *entity.Do
 		UPDATE doctors
 		SET fullname = $1, description = $2, doctor_photo = $3, schedule_id = $4, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $5
-		RETURNING id, fullname, description, doctor_photo, schedule_id, created_at, updated_at
+		RETURNING fullname, description, doctor_photo, schedule_id
 	`
 
-	var updated entity.Doctor
+	updated := entity.Doctor{}
 	err := r.db.QueryRow(ctx, query,
 		doctor.Fullname,
 		doctor.Description,
@@ -174,13 +174,13 @@ func (r *DoctorRepository) Update(ctx context.Context, id int, doctor *entity.Do
 		doctor.ScheduleID,
 		id,
 	).Scan(
-		&updated.ID,
+		//&updated.ID,
 		&updated.Fullname,
 		&updated.Description,
 		&updated.DoctorPhoto,
 		&updated.ScheduleID,
-		&updated.CreatedAt,
-		&updated.UpdatedAt,
+		//&updated.CreatedAt,
+		//&updated.UpdatedAt,
 	)
 
 	if err != nil {

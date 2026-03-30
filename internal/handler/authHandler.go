@@ -3,6 +3,7 @@ package handler
 import (
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/service"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +32,7 @@ func NewAuthHandler(authService service.AuthServiceInterface) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req entity.UserRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println("req: ", req)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
