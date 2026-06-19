@@ -21,7 +21,14 @@ type Env struct {
 	JWTExpireHours        int    `env:"JWT_EXPIRE_HOURS"`
 	JWTRefreshExpireHours int    `env:"JWT_REFRESH_EXPIRE_HOURS"`
 
-	Environment string `env:"ENVIRONMENT"`
+	Environment    string   `env:"ENVIRONMENT"`
+	AllowedOrigins []string `env:"ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:4200"`
+
+	SMTPHost     string `env:"SMTP_HOST"`
+	SMTPPort     int    `env:"SMTP_PORT"`
+	SMTPUsername string `env:"SMTP_USERNAME"`
+	SMTPPassword string `env:"SMTP_PASSWORD"`
+	SMTPFrom     string `env:"SMTP_FROM"`
 }
 
 type Config struct {

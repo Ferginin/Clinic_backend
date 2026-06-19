@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"Clinic_backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,17 +34,17 @@ func NewServiceHandler(serviceService service.ServiceServiceInterface) *ServiceH
 func (h *ServiceHandler) CreateService(c *gin.Context) {
 	var req entity.ServiceCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	svc, err := h.serviceService.CreateService(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, svc)
+	utils.SuccessResponse(c, http.StatusCreated, svc)
 }
 
 // GetAllServices godoc
@@ -56,11 +57,11 @@ func (h *ServiceHandler) CreateService(c *gin.Context) {
 func (h *ServiceHandler) GetAllServices(c *gin.Context) {
 	services, err := h.serviceService.GetAllServices(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, services)
+	utils.SuccessResponse(c, http.StatusOK, services)
 }
 
 // GetServiceByID godoc
@@ -75,17 +76,17 @@ func (h *ServiceHandler) GetAllServices(c *gin.Context) {
 func (h *ServiceHandler) GetServiceByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid service ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid service ID")
 		return
 	}
 
 	svc, err := h.serviceService.GetServiceByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Service not found"})
+		utils.ErrorResponse(c, http.StatusNotFound, "Service not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, svc)
+	utils.SuccessResponse(c, http.StatusOK, svc)
 }
 
 // GetByCategory godoc
@@ -99,17 +100,17 @@ func (h *ServiceHandler) GetServiceByID(c *gin.Context) {
 func (h *ServiceHandler) GetByCategory(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
 	services, err := h.serviceService.GetServicesByCategory(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, services)
+	utils.SuccessResponse(c, http.StatusOK, services)
 }
 
 // GetBySpecialization godoc
@@ -123,17 +124,17 @@ func (h *ServiceHandler) GetByCategory(c *gin.Context) {
 func (h *ServiceHandler) GetBySpecialization(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid specialization ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid specialization ID")
 		return
 	}
 
 	services, err := h.serviceService.GetServicesBySpecialization(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, services)
+	utils.SuccessResponse(c, http.StatusOK, services)
 }
 
 // UpdateService godoc
@@ -151,23 +152,23 @@ func (h *ServiceHandler) GetBySpecialization(c *gin.Context) {
 func (h *ServiceHandler) UpdateService(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid service ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid service ID")
 		return
 	}
 
 	var req entity.ServiceCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	svc, err := h.serviceService.UpdateService(c.Request.Context(), id, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, svc)
+	utils.SuccessResponse(c, http.StatusOK, svc)
 }
 
 // DeleteService godoc
@@ -182,12 +183,12 @@ func (h *ServiceHandler) UpdateService(c *gin.Context) {
 func (h *ServiceHandler) DeleteService(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid service ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid service ID")
 		return
 	}
 
 	if err := h.serviceService.DeleteService(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

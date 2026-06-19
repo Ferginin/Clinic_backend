@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"Clinic_backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,17 +34,17 @@ func NewScheduleHandler(scheduleService service.ScheduleServiceInterface) *Sched
 func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 	var schedule entity.Schedule
 	if err := c.ShouldBindJSON(&schedule); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	created, err := h.scheduleService.CreateSchedule(c.Request.Context(), &schedule)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, created)
+	utils.SuccessResponse(c, http.StatusCreated, created)
 }
 
 // GetAllSchedules godoc
@@ -57,11 +58,11 @@ func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 func (h *ScheduleHandler) GetAllSchedules(c *gin.Context) {
 	schedules, err := h.scheduleService.GetAllSchedules(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, schedules)
+	utils.SuccessResponse(c, http.StatusOK, schedules)
 }
 
 // GetScheduleByID godoc
@@ -76,17 +77,17 @@ func (h *ScheduleHandler) GetAllSchedules(c *gin.Context) {
 func (h *ScheduleHandler) GetScheduleByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid schedule ID")
 		return
 	}
 
 	schedule, err := h.scheduleService.GetScheduleByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Schedule not found"})
+		utils.ErrorResponse(c, http.StatusNotFound, "Schedule not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, schedule)
+	utils.SuccessResponse(c, http.StatusOK, schedule)
 }
 
 // GetByDay godoc
@@ -100,17 +101,17 @@ func (h *ScheduleHandler) GetScheduleByID(c *gin.Context) {
 func (h *ScheduleHandler) GetByDay(c *gin.Context) {
 	day, err := strconv.Atoi(c.Param("day"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid day"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid day")
 		return
 	}
 
 	schedules, err := h.scheduleService.GetScheduleByDay(c.Request.Context(), day)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, schedules)
+	utils.SuccessResponse(c, http.StatusOK, schedules)
 }
 
 // UpdateSchedule godoc
@@ -128,23 +129,23 @@ func (h *ScheduleHandler) GetByDay(c *gin.Context) {
 func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid schedule ID")
 		return
 	}
 
 	var schedule entity.Schedule
 	if err := c.ShouldBindJSON(&schedule); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	updated, err := h.scheduleService.UpdateSchedule(c.Request.Context(), id, &schedule)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, updated)
+	utils.SuccessResponse(c, http.StatusOK, updated)
 }
 
 // DeleteSchedule godoc
@@ -159,12 +160,12 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 func (h *ScheduleHandler) DeleteSchedule(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid schedule ID")
 		return
 	}
 
 	if err := h.scheduleService.DeleteSchedule(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"Clinic_backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,17 +34,17 @@ func NewSpecializationHandler(specService service.SpecializationServiceInterface
 func (h *SpecializationHandler) CreateSpecialization(c *gin.Context) {
 	var spec entity.Specialization
 	if err := c.ShouldBindJSON(&spec); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	created, err := h.specService.CreateSpecialization(c.Request.Context(), &spec)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, created)
+	utils.SuccessResponse(c, http.StatusCreated, created)
 }
 
 // GetAllSpecializations godoc
@@ -56,11 +57,11 @@ func (h *SpecializationHandler) CreateSpecialization(c *gin.Context) {
 func (h *SpecializationHandler) GetAllSpecializations(c *gin.Context) {
 	specializations, err := h.specService.GetAllSpecializations(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, specializations)
+	utils.SuccessResponse(c, http.StatusOK, specializations)
 }
 
 // GetSpecializationByID godoc
@@ -75,17 +76,17 @@ func (h *SpecializationHandler) GetAllSpecializations(c *gin.Context) {
 func (h *SpecializationHandler) GetSpecializationByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid specialization ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid specialization ID")
 		return
 	}
 
 	spec, err := h.specService.GetSpecializationByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Specialization not found"})
+		utils.ErrorResponse(c, http.StatusNotFound, "Specialization not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, spec)
+	utils.SuccessResponse(c, http.StatusOK, spec)
 }
 
 // UpdateSpecialization godoc
@@ -103,23 +104,23 @@ func (h *SpecializationHandler) GetSpecializationByID(c *gin.Context) {
 func (h *SpecializationHandler) UpdateSpecialization(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid specialization ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid specialization ID")
 		return
 	}
 
 	var spec entity.Specialization
 	if err := c.ShouldBindJSON(&spec); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	updated, err := h.specService.UpdateSpecialization(c.Request.Context(), id, &spec)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, updated)
+	utils.SuccessResponse(c, http.StatusOK, updated)
 }
 
 // DeleteSpecialization godoc
@@ -134,12 +135,12 @@ func (h *SpecializationHandler) UpdateSpecialization(c *gin.Context) {
 func (h *SpecializationHandler) DeleteSpecialization(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid specialization ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid specialization ID")
 		return
 	}
 
 	if err := h.specService.DeleteSpecialization(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

@@ -15,6 +15,7 @@ type UserRepositoryInterface interface {
 	GetByEmail(ctx context.Context, email string) (*entity.User, error)
 	GetByID(ctx context.Context, id int) (*entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
+	GetAllPaginated(ctx context.Context, limit, offset int) ([]entity.User, int, error)
 	Update(ctx context.Context, id int, user *entity.User) (*entity.User, error)
 	Delete(ctx context.Context, id int) error
 }
@@ -134,6 +135,7 @@ func (r *UserRepository) GetAll(ctx context.Context) ([]entity.User, error) {
 		       u.role_id, COALESCE(r.name, 'user') as role_name, u.created_at, u.updated_at
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.role_id != 1
 		ORDER BY u.id
 	`
 
@@ -168,6 +170,45 @@ func (r *UserRepository) GetAll(ctx context.Context) ([]entity.User, error) {
 	}
 
 	return users, nil
+}
+
+func (r *UserRepository) GetAllPaginated(ctx context.Context, limit, offset int) ([]entity.User, int, error) {
+	countQuery := `SELECT COUNT(*) FROM users WHERE role_id != 1`
+	var total int
+	if err := r.db.QueryRow(ctx, countQuery).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("failed to count users: %w", err)
+	}
+
+	query := `
+		SELECT u.id, u.username, u.email, u.confirmed, u.blocked,
+		       u.role_id, COALESCE(r.name, 'user') as role_name, u.created_at, u.updated_at
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.role_id != 1
+		ORDER BY u.id
+		LIMIT $1 OFFSET $2
+	`
+	rows, err := r.db.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []entity.User
+	for rows.Next() {
+		var user entity.User
+		if err := rows.Scan(
+			&user.ID, &user.Username, &user.Email, &user.Confirmed, &user.Blocked,
+			&user.RoleID, &user.RoleName, &user.CreatedAt, &user.UpdatedAt,
+		); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan user: %w", err)
+		}
+		users = append(users, user)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("rows iteration error: %w", err)
+	}
+	return users, total, nil
 }
 
 func (r *UserRepository) Update(ctx context.Context, id int, user *entity.User) (*entity.User, error) {

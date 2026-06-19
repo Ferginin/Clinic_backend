@@ -7,25 +7,28 @@ type Doctor struct {
 	Fullname        string           `json:"fullname" binding:"required"`
 	Description     *string          `json:"description"`
 	DoctorPhoto     *string          `json:"doctor_photo"`
+	UserID          *int             `json:"user_id"`
 	ScheduleID      *int             `json:"schedule_id"`
-	Schedule        *Schedule        `json:"schedule,omitempty"`
+	Schedules       []Schedule       `json:"schedules,omitempty"`
 	Specializations []Specialization `json:"specializations,omitempty"`
 	CreatedAt       time.Time        `json:"created_at"`
 	UpdatedAt       time.Time        `json:"updated_at"`
 }
 
 type DoctorCreateRequest struct {
-	Fullname           string  `json:"fullname" binding:"required"`
-	Description        *string `json:"description"`
-	DoctorPhoto        *string `json:"doctor_photo"`
-	ScheduleID         *int    `json:"schedule_id"`
-	SpecializationIDs  []int   `json:"specialization_ids"`
+	Fullname          string  `json:"fullname" binding:"required"`
+	Description       *string `json:"description"`
+	DoctorPhoto       *string `json:"doctor_photo"`
+	UserID            *int    `json:"user_id"`
+	ScheduleID        *int    `json:"schedule_id"`
+	SpecializationIDs []int   `json:"specialization_ids"`
 }
 
 type DoctorUpdateRequest struct {
-	Fullname           *string `json:"fullname"`
-	Description        *string `json:"description"`
-	DoctorPhoto        *string `json:"doctor_photo"`
-	ScheduleID         *int    `json:"schedule_id"`
-	SpecializationIDs  []int   `json:"specialization_ids"`
+	Fullname          *string `json:"fullname"`
+	Description       *string `json:"description"`
+	DoctorPhoto       *string `json:"doctor_photo"`
+	UserID            *int    `json:"user_id"`
+	ScheduleID        *int    `json:"schedule_id"`
+	SpecializationIDs []int   `json:"specialization_ids"`
 }

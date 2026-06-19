@@ -3,6 +3,8 @@ package handler
 import (
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/repository"
+	"Clinic_backend/internal/service"
+	"Clinic_backend/internal/utils"
 	"net/http"
 	"strconv"
 
@@ -10,12 +12,14 @@ import (
 )
 
 type UserHandler struct {
-	userRepo repository.UserRepositoryInterface
+	userRepo     repository.UserRepositoryInterface
+	auditService service.AuditServiceInterface
 }
 
-func NewUserHandler(userRepo repository.UserRepositoryInterface) *UserHandler {
+func NewUserHandler(userRepo repository.UserRepositoryInterface, auditService service.AuditServiceInterface) *UserHandler {
 	return &UserHandler{
-		userRepo: userRepo,
+		userRepo:     userRepo,
+		auditService: auditService,
 	}
 }
 
@@ -31,19 +35,19 @@ func NewUserHandler(userRepo repository.UserRepositoryInterface) *UserHandler {
 func (h *UserHandler) GetMe(c *gin.Context) {
 	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		utils.ErrorResponse(c, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
 	userID, ok := userIDValue.(int)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid user ID in token")
 		return
 	}
 
 	user, err := h.userRepo.GetByID(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found")
 		return
 	}
 
@@ -64,25 +68,25 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 func (h *UserHandler) UpdateMe(c *gin.Context) {
 	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		utils.ErrorResponse(c, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
 	userID, ok := userIDValue.(int)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid user ID in token")
 		return
 	}
 
 	var req entity.User
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	updatedUser, err := h.userRepo.Update(c.Request.Context(), userID, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -99,9 +103,22 @@ func (h *UserHandler) UpdateMe(c *gin.Context) {
 // @Failure 403 {object} map[string]string
 // @Router /users [get]
 func (h *UserHandler) GetAll(c *gin.Context) {
-	users, err := h.userRepo.GetAll(c.Request.Context())
+	limit := 20
+	offset := 0
+	if v := c.Query("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+	if v := c.Query("offset"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			offset = n
+		}
+	}
+
+	users, total, err := h.userRepo.GetAllPaginated(c.Request.Context(), limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -110,7 +127,7 @@ func (h *UserHandler) GetAll(c *gin.Context) {
 		responses[i] = *user.ToResponse()
 	}
 
-	c.JSON(http.StatusOK, responses)
+	utils.PaginatedResponse(c, http.StatusOK, responses, offset, limit, total)
 }
 
 // GetByID godoc
@@ -126,13 +143,13 @@ func (h *UserHandler) GetAll(c *gin.Context) {
 func (h *UserHandler) GetByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	user, err := h.userRepo.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found")
 		return
 	}
 
@@ -154,22 +171,24 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 func (h *UserHandler) Update(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	var req entity.User
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	updatedUser, err := h.userRepo.Update(c.Request.Context(), id, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	adminID := c.GetInt("user_id")
+	h.auditService.Log(c.Request.Context(), adminID, "UPDATE", "user", &id, c.ClientIP())
 	c.JSON(http.StatusOK, updatedUser.ToResponse())
 }
 
@@ -185,14 +204,16 @@ func (h *UserHandler) Update(c *gin.Context) {
 func (h *UserHandler) Delete(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	if err := h.userRepo.Delete(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	adminID := c.GetInt("user_id")
+	h.auditService.Log(c.Request.Context(), adminID, "DELETE", "user", &id, c.ClientIP())
 	c.Status(http.StatusNoContent)
 }

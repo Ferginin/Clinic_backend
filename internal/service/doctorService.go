@@ -11,10 +11,12 @@ type DoctorServiceInterface interface {
 	CreateDoctor(ctx context.Context, req *entity.DoctorCreateRequest) (*entity.Doctor, error)
 	GetAllDoctors(ctx context.Context) ([]entity.Doctor, error)
 	GetDoctorByID(ctx context.Context, id int) (*entity.Doctor, error)
+	GetDoctorByUserID(ctx context.Context, userID int) (*entity.Doctor, error)
 	GetDoctorsBySpecialization(ctx context.Context, specID int) ([]entity.Doctor, error)
 	UpdateDoctor(ctx context.Context, id int, req *entity.DoctorUpdateRequest) (*entity.Doctor, error)
 	DeleteDoctor(ctx context.Context, id int) error
-	GetDoctorSchedule(ctx context.Context, doctorID int) (*entity.Schedule, error)
+	GetDoctorSchedule(ctx context.Context, doctorID int) ([]entity.Schedule, error)
+	GetMySchedule(ctx context.Context, userID int) ([]entity.Schedule, error)
 }
 
 type DoctorService struct {
@@ -31,8 +33,15 @@ func NewDoctorService(doctorRepo repository.DoctorRepositoryInterface, specRepo 
 	}
 }
 
+func (s *DoctorService) loadDoctorRelations(ctx context.Context, doctor *entity.Doctor) {
+	specializations, _ := s.doctorRepo.GetSpecializations(ctx, doctor.ID)
+	doctor.Specializations = specializations
+
+	schedules, _ := s.scheduleRepo.GetByDoctorID(ctx, doctor.ID)
+	doctor.Schedules = schedules
+}
+
 func (s *DoctorService) CreateDoctor(ctx context.Context, req *entity.DoctorCreateRequest) (*entity.Doctor, error) {
-	// Валидация schedule_id если указан
 	if req.ScheduleID != nil {
 		_, err := s.scheduleRepo.GetByID(ctx, *req.ScheduleID)
 		if err != nil {
@@ -44,6 +53,7 @@ func (s *DoctorService) CreateDoctor(ctx context.Context, req *entity.DoctorCrea
 		Fullname:    req.Fullname,
 		Description: req.Description,
 		DoctorPhoto: req.DoctorPhoto,
+		UserID:      req.UserID,
 		ScheduleID:  req.ScheduleID,
 	}
 
@@ -52,27 +62,13 @@ func (s *DoctorService) CreateDoctor(ctx context.Context, req *entity.DoctorCrea
 		return nil, err
 	}
 
-	// Добавляем специализации
 	for _, specID := range req.SpecializationIDs {
 		if err := s.doctorRepo.AddSpecialization(ctx, created.ID, specID); err != nil {
 			return nil, err
 		}
 	}
 
-	// Загружаем специализации
-	specializations, err := s.doctorRepo.GetSpecializations(ctx, created.ID)
-	if err == nil {
-		created.Specializations = specializations
-	}
-
-	// Загружаем расписание если есть
-	if created.ScheduleID != nil {
-		schedule, err := s.scheduleRepo.GetByID(ctx, *created.ScheduleID)
-		if err == nil {
-			created.Schedule = schedule
-		}
-	}
-
+	s.loadDoctorRelations(ctx, created)
 	return created, nil
 }
 
@@ -82,18 +78,8 @@ func (s *DoctorService) GetAllDoctors(ctx context.Context) ([]entity.Doctor, err
 		return nil, err
 	}
 
-	// Загружаем специализации для каждого врача
 	for i := range doctors {
-		specializations, _ := s.doctorRepo.GetSpecializations(ctx, doctors[i].ID)
-		doctors[i].Specializations = specializations
-
-		// Загружаем расписание
-		if doctors[i].ScheduleID != nil {
-			schedule, err := s.scheduleRepo.GetByID(ctx, *doctors[i].ScheduleID)
-			if err == nil {
-				doctors[i].Schedule = schedule
-			}
-		}
+		s.loadDoctorRelations(ctx, &doctors[i])
 	}
 
 	return doctors, nil
@@ -105,18 +91,17 @@ func (s *DoctorService) GetDoctorByID(ctx context.Context, id int) (*entity.Doct
 		return nil, err
 	}
 
-	// Загружаем специализации
-	specializations, _ := s.doctorRepo.GetSpecializations(ctx, doctor.ID)
-	doctor.Specializations = specializations
+	s.loadDoctorRelations(ctx, doctor)
+	return doctor, nil
+}
 
-	// Загружаем расписание
-	if doctor.ScheduleID != nil {
-		schedule, err := s.scheduleRepo.GetByID(ctx, *doctor.ScheduleID)
-		if err == nil {
-			doctor.Schedule = schedule
-		}
+func (s *DoctorService) GetDoctorByUserID(ctx context.Context, userID int) (*entity.Doctor, error) {
+	doctor, err := s.doctorRepo.GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
 	}
 
+	s.loadDoctorRelations(ctx, doctor)
 	return doctor, nil
 }
 
@@ -126,10 +111,8 @@ func (s *DoctorService) GetDoctorsBySpecialization(ctx context.Context, specID i
 		return nil, err
 	}
 
-	// Загружаем специализации для каждого врача
 	for i := range doctors {
-		specializations, _ := s.doctorRepo.GetSpecializations(ctx, doctors[i].ID)
-		doctors[i].Specializations = specializations
+		s.loadDoctorRelations(ctx, &doctors[i])
 	}
 
 	return doctors, nil
@@ -141,7 +124,6 @@ func (s *DoctorService) UpdateDoctor(ctx context.Context, id int, req *entity.Do
 		return nil, err
 	}
 
-	// Обновляем только переданные поля
 	if req.Fullname != nil {
 		existing.Fullname = *req.Fullname
 	}
@@ -154,35 +136,25 @@ func (s *DoctorService) UpdateDoctor(ctx context.Context, id int, req *entity.Do
 	if req.ScheduleID != nil {
 		existing.ScheduleID = req.ScheduleID
 	}
+	if req.UserID != nil {
+		existing.UserID = req.UserID
+	}
 
 	_, err = s.doctorRepo.Update(ctx, id, existing)
 	if err != nil {
 		return nil, err
 	}
 
-	// Обновляем специализации если переданы
 	if len(req.SpecializationIDs) > 0 {
-		// Получаем текущие специализации
 		currentSpecs, _ := s.doctorRepo.GetSpecializations(ctx, id)
-
-		// Удаляем старые
 		for _, spec := range currentSpecs {
-			err := s.doctorRepo.RemoveSpecialization(ctx, id, spec.ID)
-			if err != nil {
-				return nil, err
-			}
+			_ = s.doctorRepo.RemoveSpecialization(ctx, id, spec.ID)
 		}
-
-		// Добавляем новые
 		for _, specID := range req.SpecializationIDs {
-			err := s.doctorRepo.AddSpecialization(ctx, id, specID)
-			if err != nil {
-				return nil, err
-			}
+			_ = s.doctorRepo.AddSpecialization(ctx, id, specID)
 		}
 	}
 
-	// Загружаем обновленные данные
 	return s.GetDoctorByID(ctx, id)
 }
 
@@ -190,15 +162,37 @@ func (s *DoctorService) DeleteDoctor(ctx context.Context, id int) error {
 	return s.doctorRepo.Delete(ctx, id)
 }
 
-func (s *DoctorService) GetDoctorSchedule(ctx context.Context, doctorID int) (*entity.Schedule, error) {
-	doctor, err := s.doctorRepo.GetByID(ctx, doctorID)
+func (s *DoctorService) GetDoctorSchedule(ctx context.Context, doctorID int) ([]entity.Schedule, error) {
+	if _, err := s.doctorRepo.GetByID(ctx, doctorID); err != nil {
+		return nil, err
+	}
+
+	schedules, err := s.scheduleRepo.GetByDoctorID(ctx, doctorID)
 	if err != nil {
 		return nil, err
 	}
 
-	if doctor.ScheduleID == nil {
+	if len(schedules) == 0 {
 		return nil, errors.New("doctor has no schedule")
 	}
 
-	return s.scheduleRepo.GetByID(ctx, *doctor.ScheduleID)
+	return schedules, nil
+}
+
+func (s *DoctorService) GetMySchedule(ctx context.Context, userID int) ([]entity.Schedule, error) {
+	doctor, err := s.doctorRepo.GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, errors.New("doctor profile not found")
+	}
+
+	schedules, err := s.scheduleRepo.GetByDoctorID(ctx, doctor.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(schedules) == 0 {
+		return nil, errors.New("no schedule assigned")
+	}
+
+	return schedules, nil
 }

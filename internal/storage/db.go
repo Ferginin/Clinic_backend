@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //go:embed init.sql
@@ -33,17 +34,20 @@ func CheckAndMigrate(db *pgxpool.Pool) error {
 }
 
 func InsertAdminUser(ctx context.Context, db *pgxpool.Pool) error {
-	// hash, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
 
-	_, err := db.Exec(
-		context.Background(),
-		`INSERT INTO users (id, username, email, password)
-		VALUES (DEFAULT, $1, $2, $3)
-		RETURNING id
-		`,
+	_, err = db.Exec(
+		ctx,
+		`INSERT INTO users (username, email, password, role_id, confirmed)
+		VALUES ($1, $2, $3, $4, $5)`,
 		"admin",
 		"admin@admin.ru",
-		"admin",
+		string(hash),
+		1,
+		true,
 	)
 
 	return err

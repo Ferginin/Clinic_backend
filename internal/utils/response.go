@@ -8,13 +8,14 @@ type Response struct {
 	Success bool        `json:"success"`
 	Data    interface{} `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
+	Details string      `json:"details,omitempty"`
 }
 
 type PaginatedData struct {
-	Data  interface{} `json:"data"`
-	Page  int         `json:"page"`
-	Limit int         `json:"limit"`
-	Total int         `json:"total"`
+	Data   interface{} `json:"data"`
+	Offset int         `json:"offset"`
+	Limit  int         `json:"limit"`
+	Total  int         `json:"total"`
 }
 
 func SuccessResponse(c *gin.Context, code int, data interface{}) {
@@ -24,11 +25,15 @@ func SuccessResponse(c *gin.Context, code int, data interface{}) {
 	})
 }
 
-func ErrorResponse(c *gin.Context, code int, message string) {
-	c.JSON(code, Response{
+func ErrorResponse(c *gin.Context, code int, message string, details ...string) {
+	resp := Response{
 		Success: false,
 		Error:   message,
-	})
+	}
+	if len(details) > 0 {
+		resp.Details = details[0]
+	}
+	c.JSON(code, resp)
 }
 
 func ValidationErrorResponse(c *gin.Context, errors []string) {
@@ -38,14 +43,14 @@ func ValidationErrorResponse(c *gin.Context, errors []string) {
 	})
 }
 
-func PaginatedResponse(c *gin.Context, code int, data interface{}, page, limit, total int) {
+func PaginatedResponse(c *gin.Context, code int, data interface{}, offset, limit, total int) {
 	c.JSON(code, Response{
 		Success: true,
 		Data: PaginatedData{
-			Data:  data,
-			Page:  page,
-			Limit: limit,
-			Total: total,
+			Data:   data,
+			Offset: offset,
+			Limit:  limit,
+			Total:  total,
 		},
 	})
 }

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"Clinic_backend/config"
+	"Clinic_backend/internal/utils"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,21 +15,20 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			utils.ErrorResponse(c, http.StatusUnauthorized, "Authorization header required")
 			c.Abort()
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+			utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid authorization format")
 			c.Abort()
 			return
 		}
 
 		tokenString := parts[1]
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			fmt.Println("token: ", token)
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
@@ -36,18 +36,18 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid or expired token")
 			c.Abort()
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid token claims")
 			c.Abort()
 			return
 		}
-		fmt.Println("claims: ", claims)
+
 		c.Set("user_id", int(claims["user_id"].(float64)))
 		c.Set("email", claims["email"].(string))
 		c.Set("role", claims["role"].(string))
@@ -59,7 +59,7 @@ func RoleMiddleware(allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Role not found"})
+			utils.ErrorResponse(c, http.StatusForbidden, "Role not found")
 			c.Abort()
 			return
 		}
@@ -72,7 +72,7 @@ func RoleMiddleware(allowedRoles ...string) gin.HandlerFunc {
 			}
 		}
 
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		utils.ErrorResponse(c, http.StatusForbidden, "Insufficient permissions")
 		c.Abort()
 	}
 }

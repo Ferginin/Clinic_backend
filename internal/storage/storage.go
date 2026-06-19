@@ -28,7 +28,7 @@ func NewConnection(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 		log.Fatal("Unable to parse config", err)
 	}
 
-	// Настройки пула
+	// pool
 	config.MaxConns = 25
 	config.MinConns = 5
 	config.MaxConnLifetime = 30 * time.Minute

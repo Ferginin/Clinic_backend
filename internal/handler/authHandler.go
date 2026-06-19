@@ -3,7 +3,7 @@ package handler
 import (
 	"Clinic_backend/internal/entity"
 	"Clinic_backend/internal/service"
-	"fmt"
+	"Clinic_backend/internal/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,60 +14,96 @@ type AuthHandler struct {
 }
 
 func NewAuthHandler(authService service.AuthServiceInterface) *AuthHandler {
-	return &AuthHandler{
-		authService: authService,
-	}
+	return &AuthHandler{authService: authService}
 }
 
 // Register godoc
 // @Summary Register new user
-// @Description Register a new user account
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param request body entity.UserRegisterRequest true "Registration data"
 // @Success 201 {object} entity.AuthResponse
-// @Failure 400 {object} map[string]string
+// @Failure 400 {object} utils.Response
 // @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req entity.UserRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		fmt.Println("req: ", req)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-
 	response, err := h.authService.Register(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	c.JSON(http.StatusCreated, response)
+	utils.SuccessResponse(c, http.StatusCreated, response)
 }
 
 // Login godoc
 // @Summary User login
-// @Description Authenticate user and return JWT token
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param request body entity.UserLoginRequest true "Login credentials"
 // @Success 200 {object} entity.AuthResponse
-// @Failure 401 {object} map[string]string
+// @Failure 401 {object} utils.Response
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req entity.UserLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-
 	response, err := h.authService.Login(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusUnauthorized, err.Error())
 		return
 	}
+	utils.SuccessResponse(c, http.StatusOK, response)
+}
 
-	c.JSON(http.StatusOK, response)
+// Refresh godoc
+// @Summary Refresh access token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body entity.RefreshTokenRequest true "Refresh token"
+// @Success 200 {object} entity.AuthResponse
+// @Failure 401 {object} utils.Response
+// @Router /auth/refresh [post]
+func (h *AuthHandler) Refresh(c *gin.Context) {
+	var req entity.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	response, err := h.authService.Refresh(c.Request.Context(), &req)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, response)
+}
+
+// Logout godoc
+// @Summary Logout (revoke refresh token)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body entity.RefreshTokenRequest true "Refresh token"
+// @Success 200 {object} utils.Response
+// @Failure 400 {object} utils.Response
+// @Router /auth/logout [post]
+func (h *AuthHandler) Logout(c *gin.Context) {
+	var req entity.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := h.authService.Logout(c.Request.Context(), &req); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "logged out successfully"})
 }

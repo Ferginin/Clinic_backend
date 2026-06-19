@@ -1,11 +1,14 @@
-FROM golang:1.25-alpine
+FROM golang:1.25-alpine AS builder
 
-RUN mkdir "medlife_backend"
+WORKDIR /app
+COPY . .
+RUN go build -o main ./cmd/app
 
-ADD . /medlife_backend/
+FROM alpine:latest
 
-WORKDIR /medlife_backend/cmd/app
+RUN apk --no-cache add ca-certificates tzdata
 
-RUN go build -o main .
+WORKDIR /app
+COPY --from=builder /app/main .
 
 CMD ["./main"]

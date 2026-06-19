@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"Clinic_backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,17 +34,17 @@ func NewCategoryHandler(categoryService service.CategoryServiceInterface) *Categ
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	var category entity.ServiceCategory
 	if err := c.ShouldBindJSON(&category); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	created, err := h.categoryService.CreateCategory(c.Request.Context(), &category)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, created)
+	utils.SuccessResponse(c, http.StatusCreated, created)
 }
 
 // GetAllCategories godoc
@@ -56,11 +57,11 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 	categories, err := h.categoryService.GetAllCategories(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, categories)
+	utils.SuccessResponse(c, http.StatusOK, categories)
 }
 
 // GetCategoryByID godoc
@@ -75,17 +76,17 @@ func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
 	category, err := h.categoryService.GetCategoryByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+		utils.ErrorResponse(c, http.StatusNotFound, "Category not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, category)
+	utils.SuccessResponse(c, http.StatusOK, category)
 }
 
 // GetFavorites godoc
@@ -98,11 +99,11 @@ func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 func (h *CategoryHandler) GetFavorites(c *gin.Context) {
 	categories, err := h.categoryService.GetFavoriteCategories(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, categories)
+	utils.SuccessResponse(c, http.StatusOK, categories)
 }
 
 // UpdateCategory godoc
@@ -120,23 +121,23 @@ func (h *CategoryHandler) GetFavorites(c *gin.Context) {
 func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
 	var category entity.ServiceCategory
 	if err := c.ShouldBindJSON(&category); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	updated, err := h.categoryService.UpdateCategory(c.Request.Context(), id, &category)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, updated)
+	utils.SuccessResponse(c, http.StatusOK, updated)
 }
 
 // ToggleFavorite godoc
@@ -151,16 +152,16 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 func (h *CategoryHandler) ToggleFavorite(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
 	if err := h.categoryService.ToggleFavorite(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Favorite status toggled"})
+	utils.SuccessResponse(c, http.StatusOK, map[string]string{"message": "Favorite status toggled"})
 }
 
 // DeleteCategory godoc
@@ -175,12 +176,12 @@ func (h *CategoryHandler) ToggleFavorite(c *gin.Context) {
 func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
 	if err := h.categoryService.DeleteCategory(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

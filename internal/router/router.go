@@ -6,6 +6,7 @@ import (
 	"Clinic_backend/internal/middleware"
 	"Clinic_backend/internal/repository"
 	"Clinic_backend/internal/service"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -22,63 +23,68 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 
 	r := gin.Default()
 
-	// CORS configuration
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"*"}
+	corsConfig.AllowOrigins = cfg.Env.AllowedOrigins
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	corsConfig.AllowCredentials = true
 	r.Use(cors.New(corsConfig))
 
-	// Logger middleware
 	r.Use(middleware.LoggerMiddleware())
 
-	// Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	// Health check
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	// Init Repos
+	// Repos
 	userRepo := repository.NewUserRepository(db)
 	doctorRepo := repository.NewDoctorRepository(db)
 	serviceRepo := repository.NewServiceRepository(db)
 	serviceCategoryRepo := repository.NewServiceCategoryRepository(db)
 	specRepo := repository.NewSpecializationRepository(db)
 	scheduleRepo := repository.NewScheduleRepository(db)
-	licenseRepo := repository.NewLicenseRepository(db)
-	carouselRepo := repository.NewCarouselRepository(db)
+	appointmentRepo := repository.NewAppointmentRepository(db)
+	callbackRepo := repository.NewCallbackRepository(db)
+	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
+	auditRepo := repository.NewAuditRepository(db)
 
-	// Init Services
-	authService := service.NewAuthService(cfg, userRepo)
+	// Services
+	authService := service.NewAuthService(cfg, userRepo, refreshTokenRepo)
 	doctorService := service.NewDoctorService(doctorRepo, specRepo, scheduleRepo)
 	serviceService := service.NewServiceService(serviceRepo, serviceCategoryRepo, specRepo)
 	serviceCategoryService := service.NewCategoryService(serviceCategoryRepo, specRepo)
 	specializationService := service.NewSpecializationService(specRepo)
 	scheduleService := service.NewScheduleService(scheduleRepo)
-	licenseService := service.NewLicenseService(licenseRepo)
-	carouselService := service.NewCarouselService(carouselRepo)
+	emailService := service.NewEmailService(cfg)
+	appointmentService := service.NewAppointmentService(appointmentRepo, userRepo, doctorRepo, scheduleRepo, emailService, cfg)
+	callbackService := service.NewCallbackService(callbackRepo)
+	auditService := service.NewAuditService(auditRepo)
 
-	// Init handlers
+	// 10 requests per minute per IP on auth
+	authRateLimiter := middleware.RateLimiterMiddleware(10, time.Minute)
+
+	// Handlers
 	authHandler := handler.NewAuthHandler(authService)
-	userHandler := handler.NewUserHandler(userRepo)
-	doctorHandler := handler.NewDoctorHandler(doctorService)
+	userHandler := handler.NewUserHandler(userRepo, auditService)
+	doctorHandler := handler.NewDoctorHandler(doctorService, appointmentService, auditService)
 	serviceHandler := handler.NewServiceHandler(serviceService)
 	serviceCategoryHandler := handler.NewCategoryHandler(serviceCategoryService)
 	specializationHandler := handler.NewSpecializationHandler(specializationService)
 	scheduleHandler := handler.NewScheduleHandler(scheduleService)
-	licenseHandler := handler.NewLicenseHandler(licenseService)
-	carouselHandler := handler.NewCarouselHandler(carouselService)
+	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
+	callbackHandler := handler.NewCallbackHandler(callbackService, auditService)
 
 	api := r.Group("/api/v1")
 	{
-		// Auth routes (public)
+		// Auth routes (public) — rate limited
 		auth := api.Group("/auth")
+		auth.Use(authRateLimiter)
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/refresh", authHandler.Refresh)
+			auth.POST("/logout", authHandler.Logout)
 		}
 
 		// User routes
@@ -87,13 +93,12 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		{
 			users.GET("/me", userHandler.GetMe)
 			users.PUT("/me", userHandler.UpdateMe)
+			users.GET("/:id", middleware.RoleMiddleware("admin", "doctor"), userHandler.GetByID)
 
-			// Admin only
 			admin := users.Group("")
 			admin.Use(middleware.RoleMiddleware("admin"))
 			{
 				admin.GET("", userHandler.GetAll)
-				admin.GET("/:id", userHandler.GetByID)
 				admin.PUT("/:id", userHandler.Update)
 				admin.DELETE("/:id", userHandler.Delete)
 			}
@@ -102,13 +107,20 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		// Doctors routes
 		doctors := api.Group("/doctors")
 		{
-			// Public routes
 			doctors.GET("/specialization/:id", doctorHandler.GetBySpecialization)
 			doctors.GET("/:id/schedule", doctorHandler.GetDoctorSchedule)
 			doctors.GET("/:id", doctorHandler.GetDoctorByID)
 			doctors.GET("", doctorHandler.GetAllDoctors)
 
-			// Admin only
+			doctorMe := doctors.Group("/me")
+			doctorMe.Use(middleware.AuthMiddleware(cfg))
+			doctorMe.Use(middleware.RoleMiddleware("doctor"))
+			{
+				doctorMe.GET("", doctorHandler.GetMyProfile)
+				doctorMe.GET("/schedule", doctorHandler.GetMyScheduleHandler)
+				doctorMe.GET("/appointments", doctorHandler.GetMyAppointmentsHandler)
+			}
+
 			doctorsAdmin := doctors.Group("")
 			doctorsAdmin.Use(middleware.AuthMiddleware(cfg))
 			doctorsAdmin.Use(middleware.RoleMiddleware("admin"))
@@ -122,13 +134,11 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		// Services routes
 		services := api.Group("/services")
 		{
-			// Public routes
 			services.GET("/category/:id", serviceHandler.GetByCategory)
 			services.GET("/specialization/:id", serviceHandler.GetBySpecialization)
 			services.GET("/:id", serviceHandler.GetServiceByID)
 			services.GET("", serviceHandler.GetAllServices)
 
-			// Admin only
 			servicesAdmin := services.Group("")
 			servicesAdmin.Use(middleware.AuthMiddleware(cfg))
 			servicesAdmin.Use(middleware.RoleMiddleware("admin"))
@@ -142,12 +152,10 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		// Service Categories routes
 		categories := api.Group("/service-categories")
 		{
-			// Public routes
 			categories.GET("", serviceCategoryHandler.GetAllCategories)
 			categories.GET("/favorite", serviceCategoryHandler.GetFavorites)
 			categories.GET("/:id", serviceCategoryHandler.GetCategoryByID)
 
-			// Admin only
 			categoriesAdmin := categories.Group("")
 			categoriesAdmin.Use(middleware.AuthMiddleware(cfg))
 			categoriesAdmin.Use(middleware.RoleMiddleware("admin"))
@@ -162,11 +170,9 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		// Specializations routes
 		specializations := api.Group("/specializations")
 		{
-			// Public routes
 			specializations.GET("", specializationHandler.GetAllSpecializations)
 			specializations.GET("/:id", specializationHandler.GetSpecializationByID)
 
-			// Admin only
 			specializationsAdmin := specializations.Group("")
 			specializationsAdmin.Use(middleware.AuthMiddleware(cfg))
 			specializationsAdmin.Use(middleware.RoleMiddleware("admin"))
@@ -180,11 +186,9 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		// Schedules routes
 		schedules := api.Group("/schedules")
 		{
-			// Public routes
 			schedules.GET("/day/:day", scheduleHandler.GetByDay)
 			schedules.GET("/:id", scheduleHandler.GetScheduleByID)
 
-			// Admin only
 			schedulesAdmin := schedules.Group("")
 			schedulesAdmin.Use(middleware.AuthMiddleware(cfg))
 			schedulesAdmin.Use(middleware.RoleMiddleware("admin"))
@@ -196,40 +200,37 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 			}
 		}
 
-		// Licenses routes
-		licenses := api.Group("/licenses")
+		// Callback requests routes
+		callback := api.Group("/callback-requests")
 		{
-			// Public routes
-			licenses.GET("", licenseHandler.GetAllLicenses)
-			licenses.GET("/:id", licenseHandler.GetLicenseByID)
+			callback.POST("", callbackHandler.CreateCallbackRequest)
 
-			// Admin only
-			licensesAdmin := licenses.Group("")
-			licensesAdmin.Use(middleware.AuthMiddleware(cfg))
-			licensesAdmin.Use(middleware.RoleMiddleware("admin"))
+			callbackAdmin := callback.Group("")
+			callbackAdmin.Use(middleware.AuthMiddleware(cfg))
+			callbackAdmin.Use(middleware.RoleMiddleware("admin"))
 			{
-				licensesAdmin.POST("", licenseHandler.CreateLicense)
-				licensesAdmin.PUT("/:id", licenseHandler.UpdateLicense)
-				licensesAdmin.DELETE("/:id", licenseHandler.DeleteLicense)
+				callbackAdmin.GET("", callbackHandler.GetAllCallbackRequests)
+				callbackAdmin.GET("/:id", callbackHandler.GetCallbackRequestByID)
+				callbackAdmin.PUT("/:id", callbackHandler.UpdateCallbackRequest)
+				callbackAdmin.DELETE("/:id", callbackHandler.DeleteCallbackRequest)
 			}
 		}
 
-		// Carousel routes
-		carousel := api.Group("/carousel")
-		{
-			// Public routes
-			carousel.GET("", carouselHandler.GetAllSlides)
-			carousel.GET("/:id", carouselHandler.GetSlideByID)
+		// Available slots (public)
+		api.GET("/appointments/slots/:doctor_id", appointmentHandler.GetAvailableSlots)
 
-			// Admin only
-			carouselAdmin := carousel.Group("")
-			carouselAdmin.Use(middleware.AuthMiddleware(cfg))
-			carouselAdmin.Use(middleware.RoleMiddleware("admin"))
-			{
-				carouselAdmin.POST("", carouselHandler.CreateSlide)
-				carouselAdmin.PUT("/:id", carouselHandler.UpdateSlide)
-				carouselAdmin.DELETE("/:id", carouselHandler.DeleteSlide)
-			}
+		// Appointments routes (authenticated)
+		appointments := api.Group("/appointments")
+		appointments.Use(middleware.AuthMiddleware(cfg))
+		{
+			appointments.POST("", appointmentHandler.CreateAppointment)
+			appointments.POST("/admin", appointmentHandler.AdminCreateAppointment)
+			appointments.GET("/me", appointmentHandler.GetMyAppointments)
+			appointments.PUT("/:id", appointmentHandler.UpdateAppointment)
+			appointments.DELETE("/:id", appointmentHandler.CancelAppointment)
+			appointments.POST("/:id/result", appointmentHandler.AddAppointmentResult)
+			appointments.GET("/doctor/:doctor_id", appointmentHandler.GetDoctorAppointments)
+			appointments.GET("", appointmentHandler.GetAllAppointments)
 		}
 	}
 

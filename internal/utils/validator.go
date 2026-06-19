@@ -2,9 +2,11 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 var (
@@ -53,4 +55,22 @@ func ValidateDayOfWeek(day int) error {
 
 func SanitizeString(s string) string {
 	return strings.TrimSpace(s)
+}
+
+func ValidateStringLength(field, value string, min, max int) error {
+	length := utf8.RuneCountInString(value)
+	if length < min {
+		return fmt.Errorf("%s must be at least %d characters", field, min)
+	}
+	if max > 0 && length > max {
+		return fmt.Errorf("%s must be at most %d characters", field, max)
+	}
+	return nil
+}
+
+func ValidateFutureDate(t time.Time) error {
+	if t.Before(time.Now()) {
+		return errors.New("date must be in the future")
+	}
+	return nil
 }

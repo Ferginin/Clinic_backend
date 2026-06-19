@@ -14,6 +14,7 @@ type DoctorRepositoryInterface interface {
 	Create(ctx context.Context, doctor *entity.Doctor) (*entity.Doctor, error)
 	GetAll(ctx context.Context) ([]entity.Doctor, error)
 	GetByID(ctx context.Context, id int) (*entity.Doctor, error)
+	GetByUserID(ctx context.Context, userID int) (*entity.Doctor, error)
 	GetBySpecialization(ctx context.Context, specializationID int) ([]entity.Doctor, error)
 	Update(ctx context.Context, id int, doctor *entity.Doctor) (*entity.Doctor, error)
 	Delete(ctx context.Context, id int) error
@@ -32,9 +33,9 @@ func NewDoctorRepository(db *pgxpool.Pool) DoctorRepositoryInterface {
 
 func (r *DoctorRepository) Create(ctx context.Context, doctor *entity.Doctor) (*entity.Doctor, error) {
 	query := `
-		INSERT INTO doctors (fullname, description, doctor_photo, schedule_id)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, fullname, description, doctor_photo, schedule_id, created_at, updated_at
+		INSERT INTO doctors (fullname, description, doctor_photo, user_id, schedule_id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, fullname, description, doctor_photo, user_id, schedule_id, created_at, updated_at
 	`
 
 	var created entity.Doctor
@@ -42,12 +43,14 @@ func (r *DoctorRepository) Create(ctx context.Context, doctor *entity.Doctor) (*
 		doctor.Fullname,
 		doctor.Description,
 		doctor.DoctorPhoto,
+		doctor.UserID,
 		doctor.ScheduleID,
 	).Scan(
 		&created.ID,
 		&created.Fullname,
 		&created.Description,
 		&created.DoctorPhoto,
+		&created.UserID,
 		&created.ScheduleID,
 		&created.CreatedAt,
 		&created.UpdatedAt,
@@ -62,7 +65,7 @@ func (r *DoctorRepository) Create(ctx context.Context, doctor *entity.Doctor) (*
 
 func (r *DoctorRepository) GetAll(ctx context.Context) ([]entity.Doctor, error) {
 	query := `
-		SELECT id, fullname, description, doctor_photo, schedule_id, created_at, updated_at
+		SELECT id, fullname, description, doctor_photo, user_id, schedule_id, created_at, updated_at
 		FROM doctors
 		ORDER BY id
 	`
@@ -81,6 +84,7 @@ func (r *DoctorRepository) GetAll(ctx context.Context) ([]entity.Doctor, error) 
 			&doctor.Fullname,
 			&doctor.Description,
 			&doctor.DoctorPhoto,
+			&doctor.UserID,
 			&doctor.ScheduleID,
 			&doctor.CreatedAt,
 			&doctor.UpdatedAt,
@@ -96,20 +100,21 @@ func (r *DoctorRepository) GetAll(ctx context.Context) ([]entity.Doctor, error) 
 
 func (r *DoctorRepository) GetByID(ctx context.Context, id int) (*entity.Doctor, error) {
 	query := `
-		SELECT fullname, description, doctor_photo, schedule_id
+		SELECT id, fullname, description, doctor_photo, user_id, schedule_id, created_at, updated_at
 		FROM doctors
 		WHERE id = $1
 	`
 
 	var doctor entity.Doctor
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		//&doctor.ID,
+		&doctor.ID,
 		&doctor.Fullname,
 		&doctor.Description,
 		&doctor.DoctorPhoto,
+		&doctor.UserID,
 		&doctor.ScheduleID,
-		//&doctor.CreatedAt,
-		//&doctor.UpdatedAt,
+		&doctor.CreatedAt,
+		&doctor.UpdatedAt,
 	)
 
 	if err != nil {
@@ -122,9 +127,38 @@ func (r *DoctorRepository) GetByID(ctx context.Context, id int) (*entity.Doctor,
 	return &doctor, nil
 }
 
+func (r *DoctorRepository) GetByUserID(ctx context.Context, userID int) (*entity.Doctor, error) {
+	query := `
+		SELECT id, fullname, description, doctor_photo, user_id, schedule_id, created_at, updated_at
+		FROM doctors
+		WHERE user_id = $1
+	`
+
+	var doctor entity.Doctor
+	err := r.db.QueryRow(ctx, query, userID).Scan(
+		&doctor.ID,
+		&doctor.Fullname,
+		&doctor.Description,
+		&doctor.DoctorPhoto,
+		&doctor.UserID,
+		&doctor.ScheduleID,
+		&doctor.CreatedAt,
+		&doctor.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errors.New("doctor profile not found for this user")
+		}
+		return nil, fmt.Errorf("failed to get doctor by user_id: %w", err)
+	}
+
+	return &doctor, nil
+}
+
 func (r *DoctorRepository) GetBySpecialization(ctx context.Context, specializationID int) ([]entity.Doctor, error) {
 	query := `
-		SELECT d.fullname, d.description, d.doctor_photo, d.schedule_id
+		SELECT d.id, d.fullname, d.description, d.doctor_photo, d.user_id, d.schedule_id, d.created_at, d.updated_at
 		FROM doctors d
 		INNER JOIN doctor_specializations ds ON d.id = ds.doctor_id
 		WHERE ds.specialization_id = $1
@@ -141,13 +175,14 @@ func (r *DoctorRepository) GetBySpecialization(ctx context.Context, specializati
 	for rows.Next() {
 		var doctor entity.Doctor
 		err := rows.Scan(
-			//&doctor.ID,
+			&doctor.ID,
 			&doctor.Fullname,
 			&doctor.Description,
 			&doctor.DoctorPhoto,
+			&doctor.UserID,
 			&doctor.ScheduleID,
-			//&doctor.UpdatedAt,
-			//&doctor.CreatedAt,
+			&doctor.CreatedAt,
+			&doctor.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan doctor: %w", err)
@@ -161,29 +196,34 @@ func (r *DoctorRepository) GetBySpecialization(ctx context.Context, specializati
 func (r *DoctorRepository) Update(ctx context.Context, id int, doctor *entity.Doctor) (*entity.Doctor, error) {
 	query := `
 		UPDATE doctors
-		SET fullname = $1, description = $2, doctor_photo = $3, schedule_id = $4, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $5
-		RETURNING fullname, description, doctor_photo, schedule_id
+		SET fullname = $1, description = $2, doctor_photo = $3, user_id = $4, schedule_id = $5, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $6
+		RETURNING id, fullname, description, doctor_photo, user_id, schedule_id, created_at, updated_at
 	`
 
-	updated := entity.Doctor{}
+	var updated entity.Doctor
 	err := r.db.QueryRow(ctx, query,
 		doctor.Fullname,
 		doctor.Description,
 		doctor.DoctorPhoto,
+		doctor.UserID,
 		doctor.ScheduleID,
 		id,
 	).Scan(
-		//&updated.ID,
+		&updated.ID,
 		&updated.Fullname,
 		&updated.Description,
 		&updated.DoctorPhoto,
+		&updated.UserID,
 		&updated.ScheduleID,
-		//&updated.CreatedAt,
-		//&updated.UpdatedAt,
+		&updated.CreatedAt,
+		&updated.UpdatedAt,
 	)
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errors.New("doctor not found")
+		}
 		return nil, fmt.Errorf("failed to update doctor: %w", err)
 	}
 
@@ -191,10 +231,12 @@ func (r *DoctorRepository) Update(ctx context.Context, id int, doctor *entity.Do
 }
 
 func (r *DoctorRepository) Delete(ctx context.Context, id int) error {
-	query := `DELETE FROM doctors WHERE id = $1`
-	_, err := r.db.Exec(ctx, query, id)
+	result, err := r.db.Exec(ctx, `DELETE FROM doctors WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete doctor: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return errors.New("doctor not found")
 	}
 	return nil
 }

@@ -6,22 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: Medlife_backend
-    ports:
-      - "8000:8000"
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=medlife_db
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres
-      - IP_ADDRESS=0.0.0.0
-      - API_PORT=8000
-      - JWT_SECRET=your_super_secret_jwt_key_change_in_production
-      - JWT_EXPIRE_HOURS=24
-      - JWT_REFRESH_EXPIRE_HOURS=168
-      - ENVIRONMENT=development
+    env_file: .env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - medlife-network
     restart: unless-stopped
@@ -32,9 +20,7 @@ services:
       dockerfile: Dockerfile
     container_name: Medlife_frontend
     ports:
-      - "4200:4200"
-    environment:
-      - ENVIRONMENT=development
+      - "80:80"
     depends_on:
       - backend
     networks:
@@ -56,6 +42,11 @@ services:
     networks:
       - medlife-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d medlife_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
